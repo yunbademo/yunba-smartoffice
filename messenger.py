@@ -36,7 +36,7 @@ class Messenger:
         logging.info('del')
 
     def loop(self):
-        self.socketIO.wait(seconds=0.01)
+        self.socketIO.wait(seconds=0.002)
 
     def on_socket_connect_ack(self, args):
         logging.debug('on_socket_connect_ack: %s', args)
