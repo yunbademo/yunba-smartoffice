@@ -5,13 +5,15 @@ import sys
 import logging
 from socketIO_client import SocketIO
 
+logger = logging.getLogger('messenger')
 APPKEY = '56a0a88c4407a3cd028ac2fe'
 TOPIC = 'smart_office'
 
 class Messenger:
 
     def __init__(self, alias):
-        logging.info('init')
+        self.__logger = logging.getLogger('messenger.Messenger')
+        self.__logger.info('init')
 
         self.appkey = APPKEY
         self.customid = alias
@@ -33,63 +35,62 @@ class Messenger:
         self.socketIO.on('alias', self.on_alias)
 
     def __del__(self):
-        logging.info('del')
+        self.__logger.info('del')
 
     def loop(self):
         self.socketIO.wait(seconds=0.002)
 
     def on_socket_connect_ack(self, args):
-        logging.debug('on_socket_connect_ack: %s', args)
+        self.__logger.debug('on_socket_connect_ack: %s', args)
         self.socketIO.emit('connect', {'appkey': self.appkey, 'customid': self.customid})
 
     def on_connack(self, args):
-        logging.debug('on_connack: %s', args)
+        self.__logger.debug('on_connack: %s', args)
         self.socketIO.emit('set_alias', {'alias': self.alias})
 
     def on_puback(self, args):
-        logging.debug('on_puback: %s', args)
+        self.__logger.debug('on_puback: %s', args)
 
     def on_suback(self, args):
-        logging.debug('on_suback: %s', args)
+        self.__logger.debug('on_suback: %s', args)
         self.socketIO.emit('set_alias', {'alias': self.alias})
 
     def on_message(self, args):
-        logging.debug('on_message: %s', args)
+        self.__logger.debug('on_message: %s', args)
 
     def on_set_alias(self, args):
-        logging.debug('on_set_alias: %s', args)
+        self.__logger.debug('on_set_alias: %s', args)
 
     def on_get_alias(self, args):
-        logging.debug('on_get_alias: %s', args)
+        self.__logger.debug('on_get_alias: %s', args)
 
     def on_alias(self, args):
-        logging.debug('on_alias: %s', args)
+        self.__logger.debug('on_alias: %s', args)
 
     def on_get_topic_list_ack(self, args):
-        logging.debug('on_get_topic_list_ack: %s', args)
+        self.__logger.debug('on_get_topic_list_ack: %s', args)
 
     def on_get_alias_list_ack(self, args):
-        logging.debug('on_get_alias_list_ack: %s', args)
+        self.__logger.debug('on_get_alias_list_ack: %s', args)
 
     def on_publish2_ack(self, args):
-        logging.debug('on_publish2_ack: %s', args)
+        self.__logger.debug('on_publish2_ack: %s', args)
 
     def on_publish2_recvack(self, args):
-        logging.debug('on_publish2_recvack: %s', args)
+        self.__logger.debug('on_publish2_recvack: %s', args)
 
     def on_get_state_ack(self, args):
-        logging.debug('on_get_state_ack: %s', args)
+        self.__logger.debug('on_get_state_ack: %s', args)
 
     def publish(self, msg, qos):
-        logging.debug('publish: %s', args)
+        self.__logger.debug('publish: %s', args)
         self.socketIO.emit('publish', {'topic': self.topic, 'msg': msg, 'qos': qos})
 
 if __name__ == '__main__':
 
-    #logging.getLogger('requests').setLevel(logging.WARNING)
     logging.basicConfig(level=logging.DEBUG)
 
-    m = Messenger('messenger', 'messenger')
+    m = Messenger('messenger')
 
     while True:
         m.loop()

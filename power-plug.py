@@ -7,39 +7,40 @@ import logging
 import RPi.GPIO as GPIO
 from messenger import Messenger
 
+logger = logging.getLogger('power_plug')
 ALIAS = 'power_plug'
 GPIO_NUM = 4
 
 class PowerPlug(Messenger):
 
     def __init__(self, alias, gpio_num):
-        logging.debug('init')
         Messenger.__init__(self, alias)
+        self.__logger = logging.getLogger('power_plug.PowerPlug')
+        self.__logger.debug('init')
 
         self.gpio_num = gpio_num
         GPIO.setup(self.gpio_num, GPIO.OUT)
 
     def __del__(self):
-        logging.debug('del')
+        self.__logger.debug('del')
 
     def on_message(self, args):
-        logging.debug('on_message: %s', args)
+        self.__logger.debug('on_message: %s', args)
         try:
             msg = json.loads(args['msg'])
         except Exception as e:
-            logging.warning(e)
+            self.__logger.warning(e)
             return
 
         if msg['m'] == 'on':
-            logging.debug('on')
+            self.__logger.debug('on')
             GPIO.output(self.gpio_num, GPIO.HIGH)
         elif msg['m'] == 'off':
-            logging.debug('off')
+            self.__logger.debug('off')
             GPIO.output(self.gpio_num, GPIO.LOW)
 
 if __name__ == '__main__':
 
-    #logging.getLogger('requests').setLevel(logging.WARNING)
     logging.basicConfig(level=logging.DEBUG)
 
     GPIO.setwarnings(False)
