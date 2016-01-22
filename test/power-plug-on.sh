@@ -1,5 +1,5 @@
 if [ $# != 1 ] ; then
-  echo usage: `basename ${0}` 'ALIAS'
+  echo usage: `basename ${0}` '<ALIAS>'
   exit 1
 fi
 
