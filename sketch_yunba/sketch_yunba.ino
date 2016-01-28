@@ -1,0 +1,244 @@
+#include <UIPEthernet.h>
+#include <ArduinoJson.h>
+#include <MQTTClient.h>
+
+const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
+const char *g_topic = "office";
+const char *g_devid = "plug";
+
+#define BUFSIZE 128
+
+uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
+
+boolean g_net_status = false;
+char url[32];
+
+char broker_addr[32];
+uint16_t port;
+
+unsigned int g_last_check_ms = 0;
+char client_id[32];
+char username[32];
+char password[32];
+
+EthernetClient net;
+MQTTClient client;
+StaticJsonBuffer<64> jsonBuffer;
+
+bool get_ip_pair(const char *url, char *addr, uint16_t *port) {
+  char *p = strstr(url, "tcp://");
+  if (p) {
+    p += 6;
+    char *q = strstr(p, ":");
+    if (q) {
+      int len = strlen(p) - strlen(q);
+      if (len > 0) {
+        memcpy(addr, p, len);
+        //sprintf(addr, "%.*s", len, p);
+        *port = atoi(q + 1);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t port) {
+  EthernetClient net_client;
+
+  while (0 == net_client.connect(host, port)) {
+    Serial.println("c");
+    delay(1000);
+  }
+  delay(100);
+
+  net_client.write(buf, *len);
+  net_client.flush();
+
+  while (!net_client.available()) {
+    Serial.println("a");
+    delay(1000);
+  }
+
+  *len = net_client.read(buf, BUFSIZE - 1);
+  buf[*len] = 0;
+
+  net_client.stop();
+}
+
+bool get_host_v2(const char *appkey, char *url) {
+  uint8_t buf[BUFSIZE];
+
+  String data("{\"a\":\"");
+  data += String(appkey);
+  data += String("\",\"n\":\"1\",\"v\":\"v1.0\",\"o\":\"1\"}");
+  uint16_t len = data.length();
+
+  buf[0] = 1;
+  buf[1] = (uint8_t)((len >> 8) & 0xff);
+  buf[2] = (uint8_t)(len & 0xff);
+
+  memcpy(buf + 3, data.c_str(), len);
+  len += 3;
+
+  buf[len] = 0;
+  Serial.println((char *)buf + 3);
+
+  simple_send_recv(buf, &len, "tick-t.yunba.io", 9977);
+
+  if (len > 0) {
+    len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+    char *p = (char *)buf + 3;
+    if (len == strlen(p)) {
+      Serial.println(p);
+      JsonObject& root = jsonBuffer.parseObject(p);
+      if (root.success()) {
+        strcpy(url, root["c"]);
+        return true;
+      }
+    }
+  }
+  Serial.println("e1");
+  return false;
+}
+
+bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
+  uint8_t buf[BUFSIZE];
+  bool rc = false;
+
+  if (appkey == NULL) return false;
+
+  String data("{\"a\": \"");
+  data += String(appkey);
+
+  if (devid == NULL) {
+    data += String("\", \"p\":4}");
+  } else {
+    data += String("\", \"p\":4, \"d\": \"");
+    data += String(devid);
+    data += String("\"}");
+  }
+  uint16_t len = data.length();
+
+  buf[0] = 1;
+  buf[1] = (uint8_t)((len >> 8) & 0xff);
+  buf[2] = (uint8_t)(len & 0xff);
+
+  memcpy(buf + 3, data.c_str(), len);
+  len += 3;
+
+  buf[len] = 0;
+  Serial.println((char *)buf + 3);
+
+  simple_send_recv(buf, &len, "reg-t.yunba.io", 9944);
+
+  if (len > 0) {
+    len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
+    char *p = (char *)buf + 3;
+    if (len == strlen(p)) {
+      Serial.println(p);
+      JsonObject& root = jsonBuffer.parseObject(p);
+      if (root.success()) {
+        strcpy(username, root["u"]);
+        strcpy(password, root["p"]);
+        strcpy(client_id, root["c"]);
+        return true;
+      }
+    }
+  }
+
+  Serial.println("e2");
+  return false;
+}
+
+void set_alias(const char *alias) {
+  client.publish(",yali", alias);
+}
+
+void connect() {
+//  Serial.print("\nconnecting...");
+  while (!client.connect(client_id, username, password)) {
+//    Serial.print(".");
+    delay(1000);
+  }
+
+//  Serial.println("\nconnected!");
+//  client.subscribe(topic);
+  set_alias(g_devid);
+}
+
+void check_connect() {
+  if (millis() - g_last_check_ms > 2000) {
+    boolean st = client.connected();
+    Serial.println(st);
+    if (st != g_net_status) {
+      Serial.print("cst:");
+      g_net_status = st;
+      Serial.println(g_net_status);
+    }
+
+    if (!st) {
+      connect();
+    }
+    g_last_check_ms = millis();
+  }
+}
+
+void messageReceived(String topic, String payload, char * bytes, unsigned int length) {
+  Serial.println("m");
+}
+
+void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int length) {
+  Serial.println("em");
+}
+
+void init_ethernet() {
+  IPAddress ip(192,168,2,183);
+  
+  Ethernet.begin(mac, ip);
+//  Ethernet.begin(mac);
+
+  Serial.print("i:"); 
+  Serial.println(Ethernet.localIP());
+  Serial.print("s:"); 
+  Serial.println(Ethernet.subnetMask());
+  Serial.print("g:"); 
+  Serial.println(Ethernet.gatewayIP());
+  Serial.print("d:"); 
+  Serial.println(Ethernet.dnsServerIP());
+
+}
+
+void setup() {
+
+  Serial.begin(57600);
+  Serial.println("init..");
+
+  init_ethernet();
+
+  //TODO: if we can't get reg info and tick info
+  get_host_v2(g_appkey, url);
+  get_ip_pair(url, broker_addr, &port);
+
+  setup_with_appkey_and_devid(g_appkey, g_devid);
+
+  client.begin(broker_addr, port, net);
+  connect();
+  Serial.println("init..ok");
+}
+
+void loop() {
+  client.loop();
+
+  check_connect();
+
+#if 0
+  if (millis() - g_last_check_ms > 20000) {
+    g_last_check_ms = millis();
+      client.publish(g_topic, "test");
+  }
+#endif
+  delay(100);
+}
+
+
