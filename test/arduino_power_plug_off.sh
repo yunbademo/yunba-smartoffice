@@ -4,7 +4,7 @@ if [ $# != 1 ] ; then
 fi
 
 alias="${1}"
-msg="{\\\"cmd\\\": \\\"plug_set\\\", \\\"devid\\\": \\\"${alias}\\\", status\\\": 0}"
+msg="{\\\"cmd\\\":\\\"plug_set\\\",\\\"devid\\\":\\\"${alias}\\\",\\\"status\\\":0}"
 
 #echo "${msg}"
 ./publish.sh "${alias}" "${msg}"
