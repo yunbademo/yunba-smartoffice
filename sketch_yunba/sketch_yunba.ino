@@ -7,7 +7,7 @@ const char *g_topic = "office";
 const char *g_devid = "plug_plc";
 
 #define BUFSIZE 192
-#define JSON_BUFSIZE 256
+#define JSON_BUFSIZE 96
 #define PIN_CONTROL 4
 
 uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
@@ -231,11 +231,10 @@ void plug_set(uint8_t status) {
 
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
   StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
-  Serial.println("m");
-//  Serial.println(length);
-//  Serial.println(bytes);
 
-  JsonObject& root = jsonBuffer.parseObject(bytes);
+  Serial.println(payload);
+
+  JsonObject& root = jsonBuffer.parseObject(payload);
   if (!root.success()) {
     Serial.println("bad json");
     return;
