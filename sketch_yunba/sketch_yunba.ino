@@ -1,4 +1,4 @@
-#include <UIPEthernet.h>
+#include <Ethernet.h>
 #include <ArduinoJson.h>
 #include <MQTTClient.h>
 
@@ -192,14 +192,14 @@ void set_alias(const char *alias) {
   client.publish(",yali", alias);
 }
 
-void connect() {
-//  Serial.print("\nconnecting...");
+void connect_yunba() {
+  Serial.println("rc..");
   while (!client.connect(client_id, username, password)) {
-//    Serial.print(".");
+    init_network();
+    Serial.println(".");
     delay(1000);
   }
 
-//  Serial.println("\nconnected!");
 //  client.subscribe(g_topic);
   set_alias(g_devid);
 }
@@ -215,7 +215,7 @@ void check_connect() {
     }
 
     if (!st) {
-      connect();
+      connect_yunba();
     }
     g_last_check_ms = millis();
   }
@@ -281,29 +281,27 @@ void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int 
 }
 
 void init_ethernet() {
-  IPAddress ip(192,168,2,183);
+//  IPAddress ip(192,168,2,183);
   
-  Ethernet.begin(mac, ip);
-//  Ethernet.begin(mac);
+//  Ethernet.begin(mac, ip);
+  while (!Ethernet.begin(mac)) {
+    Serial.print("ie");
+    delay(1000);
+  }
 
-  Serial.print("i:"); 
+  Serial.print("i:");
   Serial.println(Ethernet.localIP());
-  Serial.print("s:"); 
+#if 0
+  Serial.print("s:");
   Serial.println(Ethernet.subnetMask());
-  Serial.print("g:"); 
+  Serial.print("g:");
   Serial.println(Ethernet.gatewayIP());
-  Serial.print("d:"); 
+  Serial.print("d:");
   Serial.println(Ethernet.dnsServerIP());
-
+#endif
 }
 
-void setup() {
-
-  Serial.begin(57600);
-  Serial.println("init..");
-
-  pinMode(PIN_CONTROL, OUTPUT);
-  digitalWrite(PIN_CONTROL, LOW);
+void init_network() {
   init_ethernet();
 
   //TODO: if we can't get reg info and tick info
@@ -313,8 +311,20 @@ void setup() {
   setup_with_appkey_and_devid(g_appkey, g_devid);
 
   client.begin(broker_addr, port, net);
-  connect();
-  Serial.println("init..ok");
+  connect_yunba();
+}
+
+void setup() {
+
+  Serial.begin(57600);
+  Serial.println("ini..");
+
+  pinMode(PIN_CONTROL, OUTPUT);
+  digitalWrite(PIN_CONTROL, LOW);
+
+  init_network();
+
+  Serial.println("ini..ok");
 }
 
 void loop() {
