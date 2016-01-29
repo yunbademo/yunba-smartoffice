@@ -26,6 +26,8 @@ char password[16];
 EthernetClient net;
 MQTTClient client;
 
+uint8_t g_status = 0;
+
 bool get_ip_port(const char *url, char *addr, uint16_t *port) {
   char *p = strstr(url, "tcp://");
   if (p) {
@@ -219,14 +221,33 @@ void check_connect() {
   }
 }
 
-void plug_set(uint8_t status) {
+void set_status(uint8_t status) {
+  if (status != 0)
+    status = 1;
+
+  if (g_status == status)
+    return;
+
+  g_status = status;
   if (status == 0) {
     Serial.println(0);
     digitalWrite(PIN_CONTROL, LOW);
-  } else if (status == 1) {
+  } else {
     Serial.println(1);
     digitalWrite(PIN_CONTROL, HIGH);
   }
+  report_status();
+}
+
+void report_status() {
+  String data("{\"status\":");
+  data += String(g_status);
+  data += String(",\"devid\":\"");
+  data += String(g_devid);
+  data += String("\"}");
+
+  Serial.println(data);
+  client.publish(g_topic, data.c_str());
 }
 
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
@@ -246,9 +267,12 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
     return;
   }
 
-  if (strcmp(root["cmd"], "plug_set") == 0) {
+  if (strcmp(root["cmd"], "set_status") == 0) {
+    Serial.println("set_status");
     uint8_t st = root["status"];
-    plug_set(st);
+    set_status(st);
+  } else if (strcmp(root["cmd"], "plug_get") == 0) {
+    report_status();
   }
 }
 
@@ -279,7 +303,7 @@ void setup() {
   Serial.println("init..");
 
   pinMode(PIN_CONTROL, OUTPUT);
-  digitalWrite(PIN_CONTROL, HIGH);
+  digitalWrite(PIN_CONTROL, LOW);
   init_ethernet();
 
   //TODO: if we can't get reg info and tick info
