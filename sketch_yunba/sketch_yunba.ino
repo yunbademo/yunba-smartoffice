@@ -19,12 +19,12 @@ char broker_addr[24];
 uint16_t port;
 
 unsigned int g_last_check_ms = 0;
-char client_id[24];
+char client_id[32];
 char username[24];
 char password[16];
 
 EthernetClient net;
-MQTTClient client;
+MQTTClient *mqtt_client;
 
 uint8_t g_status = 0;
 
@@ -32,17 +32,18 @@ bool get_ip_port(const char *url, char *addr, uint16_t *port) {
   char *p = strstr(url, "tcp://");
   if (p) {
     p += 6;
-    char *q = strstr(p, ":");
+    char *q = strchr(p, ':');
     if (q) {
       int len = strlen(p) - strlen(q);
       if (len > 0) {
         memcpy(addr, p, len);
-        //sprintf(addr, "%.*s", len, p);
         *port = atoi(q + 1);
+#if 0
         Serial.print("i:");
         Serial.println(addr);
         Serial.print("p:");
         Serial.println(*port);
+#endif
         return true;
       }
     }
@@ -54,42 +55,23 @@ void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t po
   EthernetClient net_client;
 
   while (0 == net_client.connect(host, port)) {
-    Serial.println("c");
+    Serial.println("cs"); // connect server
     delay(1000);
   }
   delay(100);
 
+  Serial.println("wd"); // write data
+  Serial.println((char *)buf + 3);
   net_client.write(buf, *len);
   net_client.flush();
 
+  Serial.println("ca"); // check available
   while (!net_client.available()) {
-    Serial.println("a");
+    Serial.println(".."); // wait data
     delay(1000);
   }
 
-  *len = net_client.read(buf, BUFSIZE - 1);
-  buf[*len] = 0;
-
-  net_client.stop();
-}
-
-void simple_send_recv2(uint8_t *buf, uint16_t *len, IPAddress ip, uint16_t port) {
-  EthernetClient net_client;
-
-  while (0 == net_client.connect(ip, port)) {
-    Serial.println("c");
-    delay(1000);
-  }
-  delay(100);
-
-  net_client.write(buf, *len);
-  net_client.flush();
-
-  while (!net_client.available()) {
-    Serial.println("a");
-    delay(1000);
-  }
-
+  Serial.println("rd"); // read data
   *len = net_client.read(buf, BUFSIZE - 1);
   buf[*len] = 0;
 
@@ -97,7 +79,7 @@ void simple_send_recv2(uint8_t *buf, uint16_t *len, IPAddress ip, uint16_t port)
 }
 
 bool get_host_v2(const char *appkey, char *url) {
-  uint8_t buf[BUFSIZE];
+  uint8_t buf[BUFSIZE] = {0};
 
   String data("{\"a\":\"");
   data += String(appkey);
@@ -112,12 +94,8 @@ bool get_host_v2(const char *appkey, char *url) {
   len += 3;
 
   buf[len] = 0;
-  Serial.println((char *)buf + 3);
 
-//  simple_send_recv(buf, &len, "tick-t.yunba.io", 9977);
-
-  IPAddress ip(101, 200, 229, 48);
-  simple_send_recv2(buf, &len, ip, 9977);
+  simple_send_recv(buf, &len, "tick-t.yunba.io", 9977);
 
   if (len > 0) {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
@@ -132,7 +110,7 @@ bool get_host_v2(const char *appkey, char *url) {
       }
     }
   }
-  Serial.println("e1");
+  Serial.println("eh");
   return false;
 }
 
@@ -161,12 +139,8 @@ bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
   len += 3;
 
   buf[len] = 0;
-  Serial.println((char *)buf + 3);
 
-//  simple_send_recv(buf, &len, "reg-t.yunba.io", 9944);
-
-  IPAddress ip(182, 92, 105, 230);
-  simple_send_recv2(buf, &len, ip, 9944);
+  simple_send_recv(buf, &len, "reg-t.yunba.io", 9944);
 
   if (len > 0) {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
@@ -184,38 +158,41 @@ bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
     }
   }
 
-  Serial.println("e2");
+  Serial.println("es");
   return false;
 }
 
 void set_alias(const char *alias) {
-  client.publish(",yali", alias);
+  mqtt_client->publish(",yali", alias);
 }
 
-void connect_yunba() {
-  Serial.println("rc..");
-  while (!client.connect(client_id, username, password)) {
-    init_network();
-    Serial.println(".");
+void mqtt_connect() {
+  Serial.println("cn.."); // connecting
+  while (!mqtt_client->connect(client_id, username, password)) {
+    Serial.println("..");
     delay(1000);
   }
 
-//  client.subscribe(g_topic);
+  Serial.println("co"); // connect ok
+
+//  mqtt_client->subscribe(g_topic);
   set_alias(g_devid);
 }
 
 void check_connect() {
   if (millis() - g_last_check_ms > 2000) {
-    boolean st = client.connected();
+    boolean st = mqtt_client->connected();
 //    Serial.println(st);
     if (st != g_net_status) {
-      Serial.print("cst:");
+      Serial.print("cs:");
       g_net_status = st;
       Serial.println(g_net_status);
     }
 
     if (!st) {
-      connect_yunba();
+      mqtt_client->disconnect();
+      delete(mqtt_client);
+      init_network();
     }
     g_last_check_ms = millis();
   }
@@ -247,7 +224,7 @@ void report_status() {
   data += String("\"}");
 
   Serial.println(data);
-  client.publish(g_topic, data.c_str());
+  mqtt_client->publish(g_topic, data.c_str());
 }
 
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
@@ -258,17 +235,16 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
 
   JsonObject& root = jsonBuffer.parseObject(bytes);
   if (!root.success()) {
-    Serial.println("bad json");
+    Serial.println("js");
     return;
   }
 
   if (strcmp(root["devid"], g_devid) != 0) {
-    Serial.println("bad devid");
+    Serial.println("dv");
     return;
   }
 
-  if (strcmp(root["cmd"], "set_status") == 0) {
-    Serial.println("set_status");
+  if (strcmp(root["cmd"], "plug_set") == 0) {
     uint8_t st = root["status"];
     set_status(st);
   } else if (strcmp(root["cmd"], "plug_get") == 0) {
@@ -282,10 +258,11 @@ void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int 
 
 void init_ethernet() {
 //  IPAddress ip(192,168,2,183);
-  
 //  Ethernet.begin(mac, ip);
+
+  Serial.println("ie.."); // init ethernet
   while (!Ethernet.begin(mac)) {
-    Serial.print("ie");
+    Serial.println("..");
     delay(1000);
   }
 
@@ -310,35 +287,31 @@ void init_network() {
 
   setup_with_appkey_and_devid(g_appkey, g_devid);
 
-  client.begin(broker_addr, port, net);
-  connect_yunba();
+  mqtt_client->begin(broker_addr, port, net);
+  mqtt_connect();
 }
 
 void setup() {
 
   Serial.begin(57600);
-  Serial.println("ini..");
+  Serial.println("in.."); // init
 
   pinMode(PIN_CONTROL, OUTPUT);
   digitalWrite(PIN_CONTROL, LOW);
 
+  mqtt_client = new MQTTClient();
   init_network();
 
-  Serial.println("ini..ok");
+  Serial.println("io"); // init ok
 }
 
 void loop() {
-  client.loop();
+  mqtt_client->loop();
 
   check_connect();
 
-#if 0
-  if (millis() - g_last_check_ms > 20000) {
-    g_last_check_ms = millis();
-      client.publish(g_topic, "test");
-  }
-#endif
+  Ethernet.maintain();
+
   delay(100);
 }
-
 
