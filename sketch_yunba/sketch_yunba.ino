@@ -11,21 +11,21 @@ const char *g_devid = "plug";
 uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
 
 boolean g_net_status = false;
-char url[32];
+char url[24];
 
-char broker_addr[32];
+char broker_addr[24];
 uint16_t port;
 
 unsigned int g_last_check_ms = 0;
-char client_id[32];
-char username[32];
-char password[32];
+char client_id[24];
+char username[24];
+char password[16];
 
 EthernetClient net;
 MQTTClient client;
 StaticJsonBuffer<64> jsonBuffer;
 
-bool get_ip_pair(const char *url, char *addr, uint16_t *port) {
+bool get_ip_port(const char *url, char *addr, uint16_t *port) {
   char *p = strstr(url, "tcp://");
   if (p) {
     p += 6;
@@ -36,6 +36,10 @@ bool get_ip_pair(const char *url, char *addr, uint16_t *port) {
         memcpy(addr, p, len);
         //sprintf(addr, "%.*s", len, p);
         *port = atoi(q + 1);
+        Serial.print("i:");
+        Serial.println(addr);
+        Serial.print("p:");
+        Serial.println(*port);
         return true;
       }
     }
@@ -47,6 +51,29 @@ void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t po
   EthernetClient net_client;
 
   while (0 == net_client.connect(host, port)) {
+    Serial.println("c");
+    delay(1000);
+  }
+  delay(100);
+
+  net_client.write(buf, *len);
+  net_client.flush();
+
+  while (!net_client.available()) {
+    Serial.println("a");
+    delay(1000);
+  }
+
+  *len = net_client.read(buf, BUFSIZE - 1);
+  buf[*len] = 0;
+
+  net_client.stop();
+}
+
+void simple_send_recv2(uint8_t *buf, uint16_t *len, IPAddress ip, uint16_t port) {
+  EthernetClient net_client;
+
+  while (0 == net_client.connect(ip, port)) {
     Serial.println("c");
     delay(1000);
   }
@@ -84,7 +111,10 @@ bool get_host_v2(const char *appkey, char *url) {
   buf[len] = 0;
   Serial.println((char *)buf + 3);
 
-  simple_send_recv(buf, &len, "tick-t.yunba.io", 9977);
+//  simple_send_recv(buf, &len, "tick-t.yunba.io", 9977);
+
+  IPAddress ip(101, 200, 229, 48);
+  simple_send_recv2(buf, &len, ip, 9977);
 
   if (len > 0) {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
@@ -130,7 +160,10 @@ bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
   buf[len] = 0;
   Serial.println((char *)buf + 3);
 
-  simple_send_recv(buf, &len, "reg-t.yunba.io", 9944);
+//  simple_send_recv(buf, &len, "reg-t.yunba.io", 9944);
+
+  IPAddress ip(182, 92, 105, 230);
+  simple_send_recv2(buf, &len, ip, 9944);
 
   if (len > 0) {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
@@ -163,14 +196,14 @@ void connect() {
   }
 
 //  Serial.println("\nconnected!");
-//  client.subscribe(topic);
+//  client.subscribe(g_topic);
   set_alias(g_devid);
 }
 
 void check_connect() {
   if (millis() - g_last_check_ms > 2000) {
     boolean st = client.connected();
-    Serial.println(st);
+//    Serial.println(st);
     if (st != g_net_status) {
       Serial.print("cst:");
       g_net_status = st;
@@ -184,7 +217,7 @@ void check_connect() {
   }
 }
 
-void messageReceived(String topic, String payload, char * bytes, unsigned int length) {
+void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
   Serial.println("m");
 }
 
@@ -218,7 +251,7 @@ void setup() {
 
   //TODO: if we can't get reg info and tick info
   get_host_v2(g_appkey, url);
-  get_ip_pair(url, broker_addr, &port);
+  get_ip_port(url, broker_addr, &port);
 
   setup_with_appkey_and_devid(g_appkey, g_devid);
 
