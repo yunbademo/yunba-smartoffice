@@ -4,9 +4,11 @@
 
 const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
 const char *g_topic = "office";
-const char *g_devid = "plug";
+const char *g_devid = "plug_plc";
 
-#define BUFSIZE 128
+#define BUFSIZE 192
+#define JSON_BUFSIZE 256
+#define PIN_CONTROL 4
 
 uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
 
@@ -23,7 +25,6 @@ char password[16];
 
 EthernetClient net;
 MQTTClient client;
-StaticJsonBuffer<64> jsonBuffer;
 
 bool get_ip_port(const char *url, char *addr, uint16_t *port) {
   char *p = strstr(url, "tcp://");
@@ -121,6 +122,7 @@ bool get_host_v2(const char *appkey, char *url) {
     char *p = (char *)buf + 3;
     if (len == strlen(p)) {
       Serial.println(p);
+      StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(p);
       if (root.success()) {
         strcpy(url, root["c"]);
@@ -134,7 +136,6 @@ bool get_host_v2(const char *appkey, char *url) {
 
 bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
   uint8_t buf[BUFSIZE];
-  bool rc = false;
 
   if (appkey == NULL) return false;
 
@@ -170,6 +171,7 @@ bool setup_with_appkey_and_devid(const char *appkey, const char *devid) {
     char *p = (char *)buf + 3;
     if (len == strlen(p)) {
       Serial.println(p);
+      StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(p);
       if (root.success()) {
         strcpy(username, root["u"]);
@@ -217,8 +219,37 @@ void check_connect() {
   }
 }
 
+void plug_set(uint8_t status) {
+  if (status == 0) {
+    Serial.println(0);
+    digitalWrite(PIN_CONTROL, LOW);
+  } else if (status == 1) {
+    Serial.println(1);
+    digitalWrite(PIN_CONTROL, HIGH);
+  }
+}
+
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
+  StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
   Serial.println("m");
+//  Serial.println(length);
+//  Serial.println(bytes);
+
+  JsonObject& root = jsonBuffer.parseObject(bytes);
+  if (!root.success()) {
+    Serial.println("bad json");
+    return;
+  }
+
+  if (strcmp(root["devid"], g_devid) != 0) {
+    Serial.println("bad devid");
+    return;
+  }
+
+  if (strcmp(root["cmd"], "plug_set") == 0) {
+    uint8_t st = root["status"];
+    plug_set(st);
+  }
 }
 
 void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int length) {
@@ -247,6 +278,8 @@ void setup() {
   Serial.begin(57600);
   Serial.println("init..");
 
+  pinMode(PIN_CONTROL, OUTPUT);
+  digitalWrite(PIN_CONTROL, HIGH);
   init_ethernet();
 
   //TODO: if we can't get reg info and tick info
