@@ -232,9 +232,10 @@ void plug_set(uint8_t status) {
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
   StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
 
-  Serial.println(payload);
+  bytes[length] = 0;
+  Serial.println(bytes);
 
-  JsonObject& root = jsonBuffer.parseObject(payload);
+  JsonObject& root = jsonBuffer.parseObject(bytes);
   if (!root.success()) {
     Serial.println("bad json");
     return;
