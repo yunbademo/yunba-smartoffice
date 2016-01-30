@@ -162,12 +162,12 @@ void check_connect() {
     }
 
     if (!st) {
- //     mqtt_client->disconnect();
- //     delete(mqtt_client);
- //     delete(mqtt_net_client);
- //     mqtt_client = 0;
- //     mqtt_net_client = 0;
+//      mqtt_client->disconnect();
+      delete(mqtt_client);
+      delete(mqtt_net_client);
+
       init_ethernet();
+      init_yunba();
       connect_yunba();
     }
     g_last_check_ms = millis();
@@ -261,23 +261,11 @@ void init_yunba() {
   mqtt_net_client = new EthernetClient();
   mqtt_client = new MQTTClient();
   mqtt_client->begin(g_addr, g_port, *mqtt_net_client);
-
-#if 1
-  Serial.println(g_addr);
-  Serial.println(g_port);
-#endif
-
-  Serial.println("=1");
-  Serial.println("=2");
 }
 
 void connect_yunba() {
-    Serial.println("cn.."); // connecting
-#if 1
-  Serial.println(client_id);
-  Serial.println(username);
-  Serial.println(password);
-#endif
+  Serial.println("cn.."); // connecting
+
   while (!mqtt_client->connect(client_id, username, password)) {
     Serial.println("..");
     delay(1000);
@@ -288,7 +276,6 @@ void connect_yunba() {
 
 //  mqtt_client->subscribe(g_topic);
   mqtt_client->publish(",yali", g_devid); // set alias
-  Serial.println("=3");
 }
 
 void setup() {
