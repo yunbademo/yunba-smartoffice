@@ -2,27 +2,27 @@
 #include <ArduinoJson.h>
 #include <MQTTClient.h>
 
-const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
-const char *g_topic = "office";
-const char *g_devid = "plug_plc";
-
 #define BUFSIZE 128
 #define JSON_BUFSIZE 128
 #define PIN_CONTROL 4
 
+const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
+const char *g_topic = "office";
+const char *g_devid = "plug_plc";
+
 bool g_net_status = false;
 char g_url[32];
-
 char g_addr[32];
 uint16_t g_port;
 
 unsigned long g_last_check_ms = 0;
-char client_id[32];
-char username[24];
-char password[16];
+char g_client_id[32];
+char g_username[24];
+char g_password[16];
+bool g_need_report = true;
 
-EthernetClient *mqtt_net_client;
-MQTTClient *mqtt_client;
+EthernetClient *g_net_client;
+MQTTClient *g_mqtt_client;
 
 uint8_t g_status = 0;
 
@@ -133,9 +133,9 @@ bool setup_with_appkey_and_devid() {
       StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(p);
       if (root.success()) {
-        strcpy(username, root["u"]);
-        strcpy(password, root["p"]);
-        strcpy(client_id, root["c"]);
+        strcpy(g_username, root["u"]);
+        strcpy(g_password, root["p"]);
+        strcpy(g_client_id, root["c"]);
         return true;
       }
     }
@@ -151,7 +151,7 @@ void mqtt_init() {
 
 void check_connect() {
   if (millis() - g_last_check_ms > 2000) {
-    bool st = mqtt_client->connected();
+    bool st = g_mqtt_client->connected();
     Serial.print("cs:");
     Serial.println(st);
 
@@ -160,9 +160,8 @@ void check_connect() {
     }
 
     if (!st) {
-//      mqtt_client->disconnect();
-      delete(mqtt_client);
-      delete(mqtt_net_client);
+      delete g_mqtt_client;
+      delete g_net_client;
 
       init_ethernet();
       init_yunba();
@@ -187,7 +186,7 @@ void set_status(uint8_t status) {
     Serial.println(1);
     digitalWrite(PIN_CONTROL, HIGH);
   }
-//  report_status();
+  g_need_report = true;
 }
 
 void report_status() {
@@ -195,7 +194,7 @@ void report_status() {
 
   snprintf((char *)buf, BUFSIZE, "{\"status\":%d,\"devid\":\"%s\"}", g_status, g_devid);
   Serial.println((char *)buf);
-  mqtt_client->publish(g_topic, (char *)buf);
+  g_mqtt_client->publish(g_topic, (char *)buf);
 }
 
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
@@ -231,8 +230,6 @@ void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int 
 
 void init_ethernet() {
   uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
-//  IPAddress ip(192,168,2,183);
-//  Ethernet.begin(mac, ip);
 
   Serial.println("ie.."); // init ethernet
   while (!Ethernet.begin(mac)) {
@@ -257,15 +254,15 @@ void init_yunba() {
   get_ip_port();
   setup_with_appkey_and_devid();
 
-  mqtt_net_client = new EthernetClient();
-  mqtt_client = new MQTTClient();
-  mqtt_client->begin(g_addr, g_port, *mqtt_net_client);
+  g_net_client = new EthernetClient();
+  g_mqtt_client = new MQTTClient();
+  g_mqtt_client->begin(g_addr, g_port, *g_net_client);
 }
 
 void connect_yunba() {
   Serial.println("cn.."); // connecting
 
-  while (!mqtt_client->connect(client_id, username, password)) {
+  while (!g_mqtt_client->connect(g_client_id, g_username, g_password)) {
     Serial.println("..");
     delay(1000);
   }
@@ -273,8 +270,8 @@ void connect_yunba() {
   g_last_check_ms = millis();
   Serial.println("co"); // connect ok
 
-//  mqtt_client->subscribe(g_topic);
-  mqtt_client->publish(",yali", g_devid); // set alias
+//  g_mqtt_client->subscribe(g_topic);
+  g_mqtt_client->publish(",yali", g_devid); // set alias
 }
 
 void setup() {
@@ -294,9 +291,14 @@ void setup() {
 }
 
 void loop() {
-  mqtt_client->loop();
+  g_mqtt_client->loop();
 
   check_connect();
+
+  if (g_need_report) {
+    report_status();
+    g_need_report = false;
+  }
 
 //  Ethernet.maintain();
 
