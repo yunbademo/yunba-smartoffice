@@ -7,10 +7,8 @@ const char *g_topic = "office";
 const char *g_devid = "plug_plc";
 
 #define BUFSIZE 128
-#define JSON_BUFSIZE 168
+#define JSON_BUFSIZE 128
 #define PIN_CONTROL 4
-
-uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
 
 bool g_net_status = false;
 char g_url[32];
@@ -189,7 +187,7 @@ void set_status(uint8_t status) {
     Serial.println(1);
     digitalWrite(PIN_CONTROL, HIGH);
   }
-  report_status();
+//  report_status();
 }
 
 void report_status() {
@@ -201,7 +199,7 @@ void report_status() {
 }
 
 void messageReceived(String topic, String payload, char *bytes, unsigned int length) {
-  #if 0
+  #if 1
   StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
 
   bytes[length] = 0;
@@ -219,8 +217,8 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
   }
 
   if (strcmp(root["cmd"], "plug_set") == 0) {
-    uint8_t st = root["status"];
-    set_status(st);
+      uint8_t st = root["status"];
+      set_status(st);
   } else if (strcmp(root["cmd"], "plug_get") == 0) {
     report_status();
   }
@@ -232,6 +230,7 @@ void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int 
 }
 
 void init_ethernet() {
+  uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
 //  IPAddress ip(192,168,2,183);
 //  Ethernet.begin(mac, ip);
 
@@ -289,6 +288,7 @@ void setup() {
   init_ethernet();
 
   init_yunba();
+  connect_yunba();
 
   Serial.println("so"); // init ok
 }
@@ -298,7 +298,7 @@ void loop() {
 
   check_connect();
 
-  Ethernet.maintain();
+//  Ethernet.maintain();
 
   delay(100);
 }
