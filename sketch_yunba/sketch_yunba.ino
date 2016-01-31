@@ -21,6 +21,8 @@ char g_username[24];
 char g_password[16];
 bool g_need_report = true;
 
+unsigned long g_connected_ms = 0;
+
 EthernetClient *g_net_client;
 MQTTClient *g_mqtt_client;
 
@@ -204,6 +206,11 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
   bytes[length] = 0;
   Serial.println(bytes);
 
+  if (millis() - g_connected_ms < 5000) { // discard wrong offline message...
+    Serial.println("ds");
+    return;
+  }
+
   JsonObject& root = jsonBuffer.parseObject(bytes);
   if (!root.success()) {
     Serial.println("js");
@@ -272,6 +279,8 @@ void connect_yunba() {
 
 //  g_mqtt_client->subscribe(g_topic);
   g_mqtt_client->publish(",yali", g_devid); // set alias
+
+  g_connected_ms = millis();
 }
 
 void setup() {
