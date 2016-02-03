@@ -4,7 +4,9 @@
 
 #define BUFSIZE 128
 #define JSON_BUFSIZE 128
-#define PIN_CONTROL 4
+
+#define PIN_NET_STATUS 8
+#define PIN_PLUG_CONTROL 9
 
 const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
 const char *g_topic = "office";
@@ -26,7 +28,7 @@ unsigned long g_connected_ms = 0;
 EthernetClient *g_net_client;
 MQTTClient *g_mqtt_client;
 
-uint8_t g_status = 0;
+uint8_t g_plug_status = 0;
 
 bool get_ip_port() {
   char *p = strstr(g_url, "tcp://");
@@ -162,6 +164,7 @@ void check_connect() {
     }
 
     if (!st) {
+      digitalWrite(PIN_NET_STATUS, LOW);
       delete g_mqtt_client;
       delete g_net_client;
 
@@ -173,20 +176,20 @@ void check_connect() {
   }
 }
 
-void set_status(uint8_t status) {
+void set_plug_status(uint8_t status) {
   if (status != 0)
     status = 1;
 
-  if (g_status == status)
+  if (g_plug_status == status)
     return;
 
-  g_status = status;
+  g_plug_status = status;
   if (status == 0) {
     Serial.println(0);
-    digitalWrite(PIN_CONTROL, LOW);
+    digitalWrite(PIN_PLUG_CONTROL, LOW);
   } else {
     Serial.println(1);
-    digitalWrite(PIN_CONTROL, HIGH);
+    digitalWrite(PIN_PLUG_CONTROL, HIGH);
   }
   g_need_report = true;
 }
@@ -194,7 +197,7 @@ void set_status(uint8_t status) {
 void report_status() {
   uint8_t buf[BUFSIZE];
 
-  snprintf((char *)buf, BUFSIZE, "{\"status\":%d,\"devid\":\"%s\"}", g_status, g_devid);
+  snprintf((char *)buf, BUFSIZE, "{\"status\":%d,\"devid\":\"%s\"}", g_plug_status, g_devid);
   Serial.println((char *)buf);
   g_mqtt_client->publish(g_topic, (char *)buf);
 }
@@ -224,7 +227,7 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
 
   if (strcmp(root["cmd"], "plug_set") == 0) {
       uint8_t st = root["status"];
-      set_status(st);
+      set_plug_status(st);
   } else if (strcmp(root["cmd"], "plug_get") == 0) {
     report_status();
   }
@@ -281,6 +284,7 @@ void connect_yunba() {
   g_mqtt_client->publish(",yali", g_devid); // set alias
 
   g_connected_ms = millis();
+  digitalWrite(PIN_NET_STATUS, HIGH);
 }
 
 void setup() {
@@ -288,8 +292,12 @@ void setup() {
   Serial.begin(57600);
   Serial.println("st.."); // setup
 
-  pinMode(PIN_CONTROL, OUTPUT);
-  digitalWrite(PIN_CONTROL, LOW);
+  pinMode(PIN_NET_STATUS, OUTPUT);
+  digitalWrite(PIN_NET_STATUS, LOW);
+//  tone(PIN_NET_STATUS, 10);
+
+  pinMode(PIN_PLUG_CONTROL, OUTPUT);
+  digitalWrite(PIN_PLUG_CONTROL, LOW);
 
   init_ethernet();
 
