@@ -8,9 +8,15 @@
 #define PIN_NET_STATUS 8
 #define PIN_PLUG_CONTROL 9
 
+#if 0
 const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
 const char *g_topic = "office";
 const char *g_devid = "plug_plc";
+#else
+const char *g_appkey = "5697113d4407a3cd028abead";
+const char *g_topic = "yunba_smart_plug";
+const char *g_devid = "plc_0";
+#endif
 
 bool g_net_status = false;
 char g_url[32];
@@ -149,10 +155,6 @@ bool setup_with_appkey_and_devid() {
   return false;
 }
 
-void mqtt_init() {
-
-}
-
 void check_connect() {
   if (millis() - g_last_check_ms > 2000) {
     bool st = g_mqtt_client->connected();
@@ -226,8 +228,8 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
   }
 
   if (strcmp(root["cmd"], "plug_set") == 0) {
-      uint8_t st = root["status"];
-      set_plug_status(st);
+    uint8_t st = root["status"];
+    set_plug_status(st);
   } else if (strcmp(root["cmd"], "plug_get") == 0) {
     report_status();
   }
@@ -236,10 +238,11 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
 
 void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int length) {
   Serial.println("em");
+  Serial.println(cmd);
 }
 
 void init_ethernet() {
-  uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x7e};
+  uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x8f};
 
   Serial.println("ie.."); // init ethernet
   while (!Ethernet.begin(mac)) {
