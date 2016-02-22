@@ -5,7 +5,7 @@
 #define BUFSIZE 128
 #define JSON_BUFSIZE 128
 
-#define PIN_NET_STATUS 8
+//#define PIN_NET_STATUS 8
 #define PIN_PLUG_CONTROL 9
 
 #if 0
@@ -166,7 +166,7 @@ void check_connect() {
     }
 
     if (!st) {
-      digitalWrite(PIN_NET_STATUS, LOW);
+//      digitalWrite(PIN_NET_STATUS, LOW);
       delete g_mqtt_client;
       delete g_net_client;
 
@@ -287,7 +287,7 @@ void connect_yunba() {
   g_mqtt_client->publish(",yali", g_devid); // set alias
 
   g_connected_ms = millis();
-  digitalWrite(PIN_NET_STATUS, HIGH);
+//  digitalWrite(PIN_NET_STATUS, HIGH);
 }
 
 void setup() {
@@ -295,9 +295,8 @@ void setup() {
   Serial.begin(57600);
   Serial.println("st.."); // setup
 
-  pinMode(PIN_NET_STATUS, OUTPUT);
-  digitalWrite(PIN_NET_STATUS, LOW);
-//  tone(PIN_NET_STATUS, 10);
+//  pinMode(PIN_NET_STATUS, OUTPUT);
+//  digitalWrite(PIN_NET_STATUS, LOW);
 
   pinMode(PIN_PLUG_CONTROL, OUTPUT);
   digitalWrite(PIN_PLUG_CONTROL, LOW);

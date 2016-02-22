@@ -83,7 +83,7 @@ class Messenger:
         self.__logger.debug('on_get_state_ack: %s', args)
 
     def publish(self, msg, qos):
-        self.__logger.debug('publish: %s', args)
+        self.__logger.debug('publish: %s', msg)
         self.socketIO.emit('publish', {'topic': self.topic, 'msg': msg, 'qos': qos})
 
 if __name__ == '__main__':
