@@ -56,7 +56,7 @@
 
 安装完成后，先将购买的另一个电力猫接电源及网线使其正常工作，然后将智能插座接同电源。正常情况下智能插座会连上网络并进行工作。然后就可以通过 [Web][11] 端查看其状态并对其进行控制了。需要注意的是要保证智能插座中的 Appkey，Devid，Topic等参数与 Web 中的一致。Web 端如下图：
 
-![2.jpg](../images/3.jpg)
+![3.jpg](../images/3.jpg)
 
 [1]: http://baike.baidu.com/link?url=Ca4yLvcnBnkrDtn90-njvbcGyial1nmojsY_3XqFi2RbO0fYYXcSGliIn4_jKv3KnJ3kPpOujq-kJhfUrllB_a
 [2]: https://www.arduino.cc/en/Main/ArduinoBoardNano
