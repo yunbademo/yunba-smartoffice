@@ -36,6 +36,18 @@ MQTTClient *g_mqtt_client;
 
 uint8_t g_plug_status = 0;
 
+void (*reset)(void) = 0;
+
+uint8_t g_retry_cnt = 0;
+
+void retry_or_reset(uint8_t try_cnt) {
+  if (g_retry_cnt >= try_cnt) {
+    reset();
+  } else {
+    ++g_retry_cnt;
+  }
+}
+
 bool get_ip_port() {
   char *p = strstr(g_url, "tcp://");
   if (p) {
@@ -62,9 +74,12 @@ bool get_ip_port() {
 void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t port) {
   EthernetClient net_client;
 
-  while (0 == net_client.connect(host, port)) {
-    Serial.println("cs"); // connect server
-    delay(1000);
+  Serial.println("cs"); // connect server
+  g_retry_cnt = 0;
+  while (!net_client.connect(host, port)) {
+    Serial.println("..");
+    delay(100);
+    retry_or_reset(3);
   }
   delay(100);
 
@@ -74,9 +89,11 @@ void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t po
   net_client.flush();
 
   Serial.println("ca"); // check available
+  g_retry_cnt = 0;
   while (!net_client.available()) {
-    Serial.println(".."); // wait data
-    delay(1000);
+    Serial.println("..");
+    delay(100);
+    retry_or_reset(3);
   }
 
   Serial.println("rd"); // read data
@@ -166,6 +183,7 @@ void check_connect() {
     }
 
     if (!st) {
+      reset();
 //      digitalWrite(PIN_NET_STATUS, LOW);
       delete g_mqtt_client;
       delete g_net_client;
@@ -242,12 +260,14 @@ void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int 
 }
 
 void init_ethernet() {
-  uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x8f};
+  uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x9f};
 
   Serial.println("ie.."); // init ethernet
+  g_retry_cnt = 0;
   while (!Ethernet.begin(mac)) {
     Serial.println("..");
-    delay(1000);
+    delay(100);
+    retry_or_reset(0);
   }
 
   Serial.print("i:");
@@ -275,9 +295,11 @@ void init_yunba() {
 void connect_yunba() {
   Serial.println("cn.."); // connecting
 
+  g_retry_cnt = 0;
   while (!g_mqtt_client->connect(g_client_id, g_username, g_password)) {
     Serial.println("..");
-    delay(1000);
+    delay(100);
+    retry_or_reset(5);
   }
 
   g_last_check_ms = millis();
