@@ -31,11 +31,11 @@
 硬件连接
 --------
 
-用插座本身的 USB 接口给 Arduino Nano 供电，因此 USB 的 5V 和 GND 分别接 Arduino Nano 的 VIN 和 GND；同样 USB 的 5V 和 GND 也分别接继电器的 DC+ 和 DC-。Arduino Nano 与 W5100 通过 SPI 的通信，通信接口为（D10(SS)，D11(MOSI)，D12(MISO)，D13(SCK)），总的连线如下，参考智能插座内部图：
+用插座本身的 USB 接口给 Arduino Nano 供电，因此 USB 的 5V 和 GND 分别接 Arduino Nano 的 5V 和 GND；同样 USB 的 5V 和 GND 也分别接继电器的 DC+ 和 DC-。Arduino Nano 与 W5100 通过 SPI 的通信，通信接口为（D10(SS)，D11(MOSI)，D12(MISO)，D13(SCK)）；W5100 与载波模块采取 RJ45 交叉线的连接方式，总的连线如下，参考智能插座内部图：
 
 | Arduino Nano | W5100 | 插座 | 继电器 | 载波模块 |
 |--------|--------|--------|--------|--------|
-| VIN |  | USB 5V | DC+ |  |
+| 5V |  | USB 5V | DC+ |  |
 | GND |  | USB GND | DC- |  |
 | D9 |  |  | IN |  |
 | 5V | +5 |  |  |  |
@@ -47,7 +47,10 @@
 |  |  | LIN(输入火线) | COM | L(火线) |
 |  |  | NIN(输入零线) |  | N(零线) |
 |  |  | LOUT(输出火线) | NO |  |
-|  | RJ45 |  |  | RJ45 |
+|  | RJ45-1 |  |  | RJ45-3 |
+|  | RJ45-3 |  |  | RJ45-1 |
+|  | RJ45-2 |  |  | RJ45-6 |
+|  | RJ45-6 |  |  | RJ45-2 |
 
 安装及测试
 ------

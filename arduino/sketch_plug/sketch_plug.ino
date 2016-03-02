@@ -59,10 +59,10 @@ bool get_ip_port() {
         memcpy(g_addr, p, len);
         g_port = (uint16_t)atoi(q + 1);
 #if 0
-        Serial.print("i:");
-        Serial.println(g_addr);
-        Serial.print("p:");
-        Serial.println(g_port);
+        //Serial.print("i:");
+        //Serial.println(g_addr);
+        //Serial.print("p:");
+        //Serial.println(g_port);
 #endif
         return true;
       }
@@ -74,29 +74,29 @@ bool get_ip_port() {
 void simple_send_recv(uint8_t *buf, uint16_t *len, const char *host, uint16_t port) {
   EthernetClient net_client;
 
-  Serial.println("cs"); // connect server
+  //Serial.println("cs"); // connect server
   g_retry_cnt = 0;
   while (!net_client.connect(host, port)) {
-    Serial.println("..");
+    //Serial.println("..");
     delay(100);
     retry_or_reset(3);
   }
   delay(100);
 
-  Serial.println("wd"); // write data
-  Serial.println((char *)buf + 3);
+  //Serial.println("wd"); // write data
+  //Serial.println((char *)buf + 3);
   net_client.write(buf, *len);
   net_client.flush();
 
-  Serial.println("ca"); // check available
+  //Serial.println("ca"); // check available
   g_retry_cnt = 0;
   while (!net_client.available()) {
-    Serial.println("..");
+    //Serial.println("..");
     delay(100);
     retry_or_reset(3);
   }
 
-  Serial.println("rd"); // read data
+  //Serial.println("rd"); // read data
   *len = net_client.read(buf, BUFSIZE - 1);
   buf[*len] = 0;
 
@@ -123,7 +123,7 @@ bool get_host_v2() {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
     char *p = (char *)buf + 3;
     if (len == strlen(p)) {
-      Serial.println(p);
+      //Serial.println(p);
       StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(p);
       if (root.success()) {
@@ -132,7 +132,7 @@ bool get_host_v2() {
       }
     }
   }
-  Serial.println("eh");
+  //Serial.println("eh");
   return false;
 }
 
@@ -156,7 +156,7 @@ bool setup_with_appkey_and_devid() {
     len = (uint16_t)(((uint8_t)buf[1] << 8) | (uint8_t)buf[2]);
     char *p = (char *)buf + 3;
     if (len == strlen(p)) {
-      Serial.println(p);
+      //Serial.println(p);
       StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
       JsonObject& root = jsonBuffer.parseObject(p);
       if (root.success()) {
@@ -168,15 +168,15 @@ bool setup_with_appkey_and_devid() {
     }
   }
 
-  Serial.println("es");
+  //Serial.println("es");
   return false;
 }
 
 void check_connect() {
   if (millis() - g_last_check_ms > 2000) {
     bool st = g_mqtt_client->connected();
-    Serial.print("cs:");
-    Serial.println(st);
+    //Serial.print("cs:");
+    //Serial.println(st);
 
     if (st != g_net_status) {
       g_net_status = st;
@@ -205,10 +205,10 @@ void set_plug_status(uint8_t status) {
 
   g_plug_status = status;
   if (status == 0) {
-    Serial.println(0);
+    //Serial.println(0);
     digitalWrite(PIN_PLUG_CONTROL, LOW);
   } else {
-    Serial.println(1);
+    //Serial.println(1);
     digitalWrite(PIN_PLUG_CONTROL, HIGH);
   }
   g_need_report = true;
@@ -218,7 +218,7 @@ void report_status() {
   uint8_t buf[BUFSIZE];
 
   snprintf((char *)buf, BUFSIZE, "{\"status\":%d,\"devid\":\"%s\"}", g_plug_status, g_devid);
-  Serial.println((char *)buf);
+  //Serial.println((char *)buf);
   g_mqtt_client->publish(g_topic, (char *)buf);
 }
 
@@ -227,21 +227,21 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
   StaticJsonBuffer<JSON_BUFSIZE> jsonBuffer;
 
   bytes[length] = 0;
-  Serial.println(bytes);
+  //Serial.println(bytes);
 
   if (millis() - g_connected_ms < 5000) { // discard wrong offline message...
-    Serial.println("ds");
+    //Serial.println("ds");
     return;
   }
 
   JsonObject& root = jsonBuffer.parseObject(bytes);
   if (!root.success()) {
-    Serial.println("js");
+    //Serial.println("js");
     return;
   }
 
   if (strcmp(root["devid"], g_devid) != 0) {
-    Serial.println("dv");
+    //Serial.println("dv");
     return;
   }
 
@@ -255,30 +255,30 @@ void messageReceived(String topic, String payload, char *bytes, unsigned int len
 }
 
 void extMessageReceived(EXTED_CMD cmd, int status, String payload, unsigned int length) {
-  Serial.println("em");
-  Serial.println(cmd);
+  //Serial.println("em");
+  //Serial.println(cmd);
 }
 
 void init_ethernet() {
   uint8_t mac[] = {0xb0, 0x5a, 0xda, 0x3a, 0x2e, 0x9f};
 
-  Serial.println("ie.."); // init ethernet
+  //Serial.println("ie.."); // init ethernet
   g_retry_cnt = 0;
   while (!Ethernet.begin(mac)) {
-    Serial.println("..");
+    //Serial.println("..");
     delay(100);
     retry_or_reset(0);
   }
 
-  Serial.print("i:");
-  Serial.println(Ethernet.localIP());
+  //Serial.print("i:");
+  //Serial.println(Ethernet.localIP());
 #if 0
-  Serial.print("s:");
-  Serial.println(Ethernet.subnetMask());
-  Serial.print("g:");
-  Serial.println(Ethernet.gatewayIP());
-  Serial.print("d:");
-  Serial.println(Ethernet.dnsServerIP());
+  //Serial.print("s:");
+  //Serial.println(Ethernet.subnetMask());
+  //Serial.print("g:");
+  //Serial.println(Ethernet.gatewayIP());
+  //Serial.print("d:");
+  //Serial.println(Ethernet.dnsServerIP());
 #endif
 }
 
@@ -293,17 +293,17 @@ void init_yunba() {
 }
 
 void connect_yunba() {
-  Serial.println("cn.."); // connecting
+  //Serial.println("cn.."); // connecting
 
   g_retry_cnt = 0;
   while (!g_mqtt_client->connect(g_client_id, g_username, g_password)) {
-    Serial.println("..");
+    //Serial.println("..");
     delay(100);
     retry_or_reset(5);
   }
 
   g_last_check_ms = millis();
-  Serial.println("co"); // connect ok
+  //Serial.println("co"); // connect ok
 
 //  g_mqtt_client->subscribe(g_topic);
   g_mqtt_client->publish(",yali", g_devid); // set alias
@@ -314,8 +314,8 @@ void connect_yunba() {
 
 void setup() {
 
-  Serial.begin(57600);
-  Serial.println("st.."); // setup
+  //Serial.begin(57600);
+  //Serial.println("st.."); // setup
 
 //  pinMode(PIN_NET_STATUS, OUTPUT);
 //  digitalWrite(PIN_NET_STATUS, LOW);
@@ -328,7 +328,7 @@ void setup() {
   init_yunba();
   connect_yunba();
 
-  Serial.println("so"); // init ok
+  //Serial.println("so"); // init ok
 }
 
 void loop() {
