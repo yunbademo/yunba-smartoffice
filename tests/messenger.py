@@ -5,23 +5,21 @@ import sys
 import logging
 from socketIO_client import SocketIO
 
-logger = logging.getLogger('messenger')
-#APPKEY = '56a0a88c4407a3cd028ac2fe'
-#TOPIC = 'officeofficeofficeoffice'
-#PLUG_ALIAS = 'plug_plc'
 APPKEY = '5697113d4407a3cd028abead'
-TOPIC = 'yunba_smart_plug'
-PLUG_ALIAS = 'plc_0'
+TOPIC = 'test'
+ALIAS = 'test'
+
+logger = logging.getLogger('messenger')
 
 class Messenger:
 
-    def __init__(self, alias):
+    def __init__(self, appkey, alias, topic, customid):
         self.__logger = logging.getLogger('messenger.Messenger')
         self.__logger.info('init')
 
-        self.appkey = APPKEY
-        self.customid = alias
-        self.topic = TOPIC
+        self.appkey = appkey
+        self.customid = customid
+        self.topic = topic
         self.alias = alias
 
         self.socketIO = SocketIO('sock.yunba.io', 3000)
@@ -50,7 +48,7 @@ class Messenger:
 
     def on_connack(self, args):
         self.__logger.debug('on_connack: %s', args)
-        self.socketIO.emit('subscribe', {'topic': TOPIC})
+        self.socketIO.emit('subscribe', {'topic': self.topic})
 
     def on_puback(self, args):
         self.__logger.debug('on_puback: %s', args)
@@ -64,7 +62,6 @@ class Messenger:
 
     def on_set_alias(self, args):
         self.__logger.debug('on_set_alias: %s', args)
-        self.publish_to_alias(PLUG_ALIAS, '{"cmd": "plug_get", "devid": "' + PLUG_ALIAS + '"}')
 
     def on_get_alias(self, args):
         self.__logger.debug('on_get_alias: %s', args)
@@ -99,7 +96,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    m = Messenger('messenger')
+    m = Messenger(APPKEY, ALIAS, TOPIC, ALIAS);
 
     while True:
         m.loop()
