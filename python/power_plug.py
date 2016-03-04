@@ -8,15 +8,17 @@ import RPi.GPIO as GPIO
 from messenger import Messenger
 
 logger = logging.getLogger('power_plug')
+
+APPKEY = '5697113d4407a3cd028abead'
 ALIAS = 'power_plug'
 GPIO_NUM = 4
 
 class PowerPlug(Messenger):
 
-    def __init__(self, alias, gpio_num):
-        Messenger.__init__(self, alias)
+    def __init__(self, appkey, alias, customid, gpio_num):
         self.__logger = logging.getLogger('power_plug.PowerPlug')
         self.__logger.debug('init')
+        Messenger.__init__(self, appkey, alias, customid)
 
         self.gpio_num = gpio_num
         GPIO.setup(self.gpio_num, GPIO.OUT)
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(GPIO_NUM, GPIO.OUT)
 
-    plug = PowerPlug(ALIAS, GPIO_NUM)
+    plug = PowerPlug(APPKEY, ALIAS, ALIAS, GPIO_NUM)
 
     while True:
         plug.loop()

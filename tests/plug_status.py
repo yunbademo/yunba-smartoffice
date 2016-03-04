@@ -17,17 +17,20 @@ PLUG_ALIAS = 'plc_0'
 class Status(Messenger):
 
     def __init__(self):
-        Messenger.__init__(self, APPKEY, 'status', TOPIC, 'status')
         self.__logger = logging.getLogger('plug.Status')
         self.__logger.info('init')
+        Messenger.__init__(self, APPKEY, 'status', 'status')
 
     def __del__(self):
         self.__logger.info('del')
 
+    def on_connack(self, args):
+        self.__logger.debug('on_connack: %s', args)
+        self.socketIO.emit('subscribe', {'topic': TOPIC})
+
     def on_set_alias(self, args):
         self.__logger.debug('on_set_alias: %s', args)
         self.publish_to_alias(PLUG_ALIAS, '{"cmd": "plug_get", "devid": "' + PLUG_ALIAS + '"}')
-
 
 if __name__ == '__main__':
 
