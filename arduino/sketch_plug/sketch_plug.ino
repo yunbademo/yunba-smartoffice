@@ -10,8 +10,8 @@
 
 #if 0
 const char *g_appkey = "56a0a88c4407a3cd028ac2fe";
-const char *g_topic = "office";
-const char *g_devid = "plug_plc";
+const char *g_topic = "smart_office";
+const char *g_devid = "plug_0";
 #else
 const char *g_appkey = "5697113d4407a3cd028abead";
 const char *g_topic = "yunba_smart_plug";
