@@ -82,9 +82,9 @@ class Messenger:
     def on_get_state_ack(self, args):
         self.__logger.debug('on_get_state_ack: %s', args)
 
-    def publish(self, msg, qos):
+    def publish(self, msg, topic, qos):
         self.__logger.debug('publish: %s', msg)
-        self.socketIO.emit('publish', {'topic': self.topic, 'msg': msg, 'qos': qos})
+        self.socketIO.emit('publish', {'topic': topic, 'msg': msg, 'qos': qos})
 
     def publish_to_alias(self, alias, msg):
         self.__logger.debug('publish_to_alias: %s %s', alias, msg)
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    m = Messenger(APPKEY, ALIAS, TOPIC, ALIAS);
+    m = Messenger(APPKEY, ALIAS, ALIAS);
 
     while True:
         m.loop()
