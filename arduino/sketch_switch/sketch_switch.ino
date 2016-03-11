@@ -23,6 +23,7 @@ uint16_t g_recv_len = 0;
 
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
+    Serial.println('have data');
     Serial.readBytes(g_header, 1);
     if (g_header[0] == FLAG_CHAR) {
       break;
