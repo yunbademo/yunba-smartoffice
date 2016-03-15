@@ -31,7 +31,16 @@ class Proxy(Messenger):
 
     def on_message(self, args):
         self.__logger.debug('on_message: %s', args)
-        self.transfer.write(args)
+
+        if not isinstance(args, dict):
+            return
+
+        if args['topic'] != self.alias:
+            return
+
+        msg = args['msg']
+        self.__logger.debug('transfer msg: %s', msg)
+        self.transfer.write(msg)
 
     def publish(self, msg):
         Messenger.publish(self, msg, self.topic, 1)
@@ -59,8 +68,7 @@ class Transfer():
         ch = ''
         while self.srl.inWaiting() >= HEADER_LEN:
             ch = self.srl.read(1)
-            print('1======')
-            print(ch)
+            self.__logger.debug('serial read: %c', ch)
             if ch == FLAG_CHAR:
                 break
     
@@ -93,23 +101,34 @@ class Transfer():
         self.__logger.debug('get a msg:')
         self.__logger.debug(self.body_data)
       
-        alias = 'aa'
-        for g in self.proxy:
-           if g.alias == alias:
-               g.publish(self.body_data)
+        try:
+            jso = json.loads(self.body_data)
+        except Exception as e:
+            self.step = 1;
+            return
+
+        alias = jso['devid']
+        if self.proxys.haskey(alias):
+            self.proxys[alias].publish(self.body_data)
       
         self.step = 1;
 
     def write(self, msg):
-        l = len(msg)
-        fmt = '>BBH{0}s'.format(l)
-        self.__logger.debug('format string: ' + fmt)
-        data = struct.pack(fmt, 0xaa, 2, l, msg)
+        msg = msg.encode('utf-8')
+
+        #l = len(msg)
+        #fmt = '>BBH{0}s'.format(l)
+        #self.__logger.debug('format string: ' + fmt)
+        #data = struct.pack(fmt, 0xaa, 2, l, msg)
+        #self.srl.write(data)
+
+        data = struct.pack('>BBH', 0xaa, 2, len(msg))
+        data += msg
+        self.__logger.debug('serial write len: %d', len(data))
         self.srl.write(data)
 
     def add_proxy(self, alias, proxy):
         self.proxys[alias] = proxy
-        
 
     def loop(self):
         if self.step == 1:

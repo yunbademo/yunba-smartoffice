@@ -15,16 +15,16 @@ const char *g_appkey = "5697113d4407a3cd028abead";
 const char *g_topic = "smart_office";
 const char *g_devid = "switch_0";
 
-char g_header[HEADER_LEN];
-char g_buf[BUF_LEN];
+uint8_t g_header[HEADER_LEN];
+uint8_t g_buf[BUF_LEN];
 int g_step = 1; // 1: recv header, 2 recv body
 uint16_t g_body_len = 0;
 uint16_t g_recv_len = 0;
 
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
-    Serial.println('have data');
     Serial.readBytes(g_header, 1);
+//    Serial.println((uint8_t)g_header[0], HEX);
     if (g_header[0] == FLAG_CHAR) {
       break;
     }
@@ -41,8 +41,11 @@ void recv_header() {
   }
 
   /* le */
-  ((uint8_t *)&g_body_len)[0] = g_header[4];
-  ((uint8_t *)&g_body_len)[1] = g_header[3];
+  ((uint8_t *)&g_body_len)[0] = g_header[3];
+  ((uint8_t *)&g_body_len)[1] = g_header[2];
+
+  Serial.println("len:");
+  Serial.println(g_body_len);
 
   if (g_body_len > (BUF_LEN - HEADER_LEN - 1)) {
     Serial.println("too long msg");
@@ -66,10 +69,11 @@ void recv_body() {
   // now got a completed msg
   g_buf[g_body_len] = 0;
   Serial.println("got a msg:");
-  Serial.println(g_buf);
+  Serial.println((char *)g_buf);
 
   handle_msg();
 
+  memset(g_header, 0, HEADER_LEN);
   g_step = 1;
 }
 
@@ -89,7 +93,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   //Serial.setTimeout(100);
-  Serial.println("st.."); // setup
+  Serial.println("setup......"); // setup
 }
 
 void loop() {
