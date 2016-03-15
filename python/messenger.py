@@ -47,13 +47,13 @@ class Messenger:
 
     def on_connack(self, args):
         self.__logger.debug('on_connack: %s', args)
+        self.socketIO.emit('set_alias', {'alias': self.alias})
 
     def on_puback(self, args):
         self.__logger.debug('on_puback: %s', args)
 
     def on_suback(self, args):
         self.__logger.debug('on_suback: %s', args)
-        self.socketIO.emit('set_alias', {'alias': self.alias})
 
     def on_message(self, args):
         self.__logger.debug('on_message: %s', args)
