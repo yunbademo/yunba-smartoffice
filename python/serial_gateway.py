@@ -15,7 +15,9 @@ logging.basicConfig(level=logging.DEBUG)
 APPKEY = '5697113d4407a3cd028abead'
 TOPIC = 'smart_office'
 HEADER_LEN = 4
-FLAG_CHAR = '0xaa'
+FLAG_CHAR = 0xaa
+MSG_TYPE_UP = 0x01
+MSG_TYPE_DOWN = 0x02
 
 class Proxy(Messenger):
 
@@ -65,23 +67,27 @@ class Transfer():
         self.__logger.debug('del')
 
     def recv_header(self):
-        ch = ''
+        x = 0
         while self.srl.inWaiting() >= HEADER_LEN:
             ch = self.srl.read(1)
-            self.__logger.debug('serial read: %c', ch)
-            if ch == FLAG_CHAR:
+            x, = struct.unpack('>B', ch)
+            self.__logger.debug('recv: 0x%02x [%c]', x, ch)
+            if x == FLAG_CHAR:
+                self.__logger.debug('got a flag char')
                 break
     
-        if ch != FLAG_CHAR:
+        if x != FLAG_CHAR:
             return
     
         ch = self.srl.read(1)
-        if ch != '0x01': # not a upstream message
+        x, = struct.unpack('>B', ch)
+        if x != MSG_TYPE_UP: # not a upstream message
+            self.__logger.debug('not a upstream message')
             return;
     
         data = self.srl.read(2)
-        self.body_len = struct.unpack('>H', data)
-        self.__logger.debug('body length: ' + self.body_len)
+        self.body_len, = struct.unpack('>H', data)
+        self.__logger.debug('body length: %d', self.body_len)
     
         self.recv_len = 0
         self.step = 2
@@ -108,7 +114,7 @@ class Transfer():
             return
 
         alias = jso['devid']
-        if self.proxys.haskey(alias):
+        if self.proxys.has_key(alias):
             self.proxys[alias].publish(self.body_data)
       
         self.step = 1;
@@ -116,13 +122,7 @@ class Transfer():
     def write(self, msg):
         msg = msg.encode('utf-8')
 
-        #l = len(msg)
-        #fmt = '>BBH{0}s'.format(l)
-        #self.__logger.debug('format string: ' + fmt)
-        #data = struct.pack(fmt, 0xaa, 2, l, msg)
-        #self.srl.write(data)
-
-        data = struct.pack('>BBH', 0xaa, 2, len(msg))
+        data = struct.pack('>BBH', FLAG_CHAR, MSG_TYPE_DOWN, len(msg))
         data += msg
         self.__logger.debug('serial write len: %d', len(data))
         self.srl.write(data)

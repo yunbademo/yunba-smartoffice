@@ -8,6 +8,9 @@
  */ 
 #include <ArduinoJson.h>
 
+#define MSG_TYPE_UP 0x01
+#define MSG_TYPE_DOWN 0x02
+
 #define HEADER_LEN 4
 #define BUF_LEN 256
 #define FLAG_CHAR 0xaa
@@ -27,6 +30,9 @@ uint16_t g_recv_len = 0;
 
 char g_status[CHILD_NUM];
 
+char g_need_report = 1;
+unsigned long g_check_ms = 0;
+
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
     Serial.readBytes(g_header, 1);
@@ -42,7 +48,7 @@ void recv_header() {
 
   Serial.readBytes(g_header + 1, HEADER_LEN - 1);
 
-  if (g_header[1] != 2) { // not a downstream message
+  if (g_header[1] != MSG_TYPE_DOWN) { // not a downstream message
     return;
   }
 
@@ -113,29 +119,46 @@ void set_status(int index, char st) {
     st = 1;
 
   Serial.print("set:");
-  Serial.print(index);
-  Serial.print(st);
+  Serial.println(index);
+  Serial.println((int)st);
 
   if (g_status[index] != st) {
     g_status[index] = st;
   }
    
   if (st == 0) {
-    //Serial.println(0);
     digitalWrite(FIRST_PIN + index, LOW);
   } else {
-    //Serial.println(1);
     digitalWrite(FIRST_PIN + index, HIGH);
   }
+  g_need_report = 1;
 }
 
-void init_status() {
+void get_all_status() {
   
+}
+
+void check_status() {
+  char st[CHILD_NUM] = {0};
+  int i = 0;
+
+  for (i = 0; i < CHILD_NUM; i++) {
+    st[i] = g_status[i];
+  }
+
+  get_all_status();
+
+  for (i = 0; i < CHILD_NUM; i++) {
+    if (g_status[i] != st[i]) {
+      g_need_report = 1;
+      break;
+    }
+  }
 }
 
 void send_msg() {
   g_buf[0] = FLAG_CHAR;
-  g_buf[1] = 1; // 1: upstream
+  g_buf[1] = MSG_TYPE_UP; // 1: upstream
   g_buf[2] = ((uint8_t *)&g_body_len)[1];
   g_buf[3] = ((uint8_t *)&g_body_len)[0];
 
@@ -170,14 +193,29 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   //Serial.setTimeout(100);
-  Serial.println("setup..."); // setup
+  Serial.println("setup...");
 
-  init_status();
-  report_status();
+  for (int i = 0; i < CHILD_NUM; i++) {
+    pinMode(FIRST_PIN + i, OUTPUT);
+//    digitalWrite(FIRST_PIN + i, LOW);
+  }
+
+  get_all_status();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   handle_input();
-  delay(10);
+
+  if (millis() - g_check_ms > 1000) {
+    check_status();
+    g_check_ms = millis();
+  }
+
+  if (g_need_report) {
+    report_status();
+    g_need_report = 0;
+  }
+
+  delay(20);
 }
