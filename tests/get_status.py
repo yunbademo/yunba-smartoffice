@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 APPKEY = '5697113d4407a3cd028abead'
 #TOPIC = 'yunba_smart_plug'
-#self.alias = 'plc_0'
+#ALIAS = 'plc_0'
 
 class Status(Messenger):
 
@@ -30,16 +30,17 @@ class Status(Messenger):
     def on_connack(self, args):
         self.__logger.debug('on_connack: %s', args)
         self.socketIO.emit('subscribe', {'topic': self.topic})
+        self.socketIO.emit('set_alias', {'alias': 'status'})
 
     def on_set_alias(self, args):
         self.__logger.debug('on_set_alias: %s', args)
-        self.publish_to_alias(self.alias, '{"cmd": '+ self.cmd + ', "devid": "' + self.alias + '"}')
+        self.publish_to_alias(self.alias, '{"cmd": "'+ self.cmd + '", "devid": "' + self.alias + '"}')
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Status')
-    parser.add_argument('topic', type=str, help='topic')
-    parser.add_argument('alias', type=str, help='alias')
+    parser.add_argument('topic', type=str, help='topic to subscribe')
+    parser.add_argument('alias', type=str, help='publish to this alias')
     parser.add_argument('cmd', type=str, help='cmd')
     args = parser.parse_args()
 

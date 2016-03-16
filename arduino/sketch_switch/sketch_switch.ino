@@ -110,7 +110,7 @@ void handle_msg() {
       set_status(i, st);
     }
   } else if (strcmp(root["cmd"], "switch_get") == 0) {
-    report_status();
+    g_need_report = 1;
   }
 }
 
