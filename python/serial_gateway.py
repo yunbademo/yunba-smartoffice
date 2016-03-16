@@ -13,7 +13,7 @@ logger = logging.getLogger('serial_gateway')
 logging.basicConfig(level=logging.DEBUG)
 
 APPKEY = '5697113d4407a3cd028abead'
-TOPIC = 'smart_office'
+#TOPIC = 'smart_office'
 HEADER_LEN = 4
 FLAG_CHAR = 0xaa
 MSG_TYPE_UP = 0x01
@@ -142,6 +142,7 @@ class Transfer():
 
 def main():
     parser = argparse.ArgumentParser(description='Serial gateway')
+    parser.add_argument('topic', type=str, help='topic')
     parser.add_argument('alias', type=str, nargs='+', help='alias')
     parser.add_argument('--port', '-p', type=str, help='Serial port(/dev/ttyUSB0)', default='/dev/ttyUSB0')
     parser.add_argument('--baud', '-b', help='Baud rate(115200)', type=int, default=115200)
@@ -149,7 +150,7 @@ def main():
 
     transfer = Transfer(args.port, args.baud)
     for a in args.alias:
-        p = Proxy(APPKEY, a, a, TOPIC, transfer)
+        p = Proxy(APPKEY, a, a, args.topic, transfer)
         transfer.add_proxy(a, p)
 
     while True:
