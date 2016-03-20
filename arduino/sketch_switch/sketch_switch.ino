@@ -7,7 +7,7 @@
       json data from yunba service
 */
 #include <ArduinoJson.h>
-#include <PWM.h>
+//#include <PWM.h>
 
 #define MSG_TYPE_UP 0x01
 #define MSG_TYPE_DOWN 0x02
@@ -18,17 +18,16 @@
 
 #define FIRST_PIN_CTRL 3
 #define FIRST_PIN_LED 6
-#define FIRST_PIN_PWM 9
 #define FIRST_PIN_TOUCH A1
 
 /* 检测到 MAX_LOW_CNT 次小于 MAX_LOW_ANNALOG 的电压后, 认为是面板发出了关的信号 */
 #define MAX_LOW_CNT 16
 #define MAX_LOW_ANNALOG 192
 
-#define CHILD_NUM 1
+#define CHILD_NUM 3
 
 
-class Child;
+class ChildSwitch;
 
 const char *g_devid = "switch_0";
 
@@ -38,29 +37,28 @@ int g_step = 1; // 1: recv header, 2 recv body
 uint16_t g_body_len = 0;
 uint16_t g_recv_len = 0;
 
-Child *g_child[CHILD_NUM];
+ChildSwitch *g_child[CHILD_NUM];
 
 char g_need_report = 1;
 unsigned long g_check_ms = 0;
 
 
-class Child {
+class ChildSwitch {
 private:
   int pin_ctrl; /* 控制继电器 */
   int pin_led; /* 控制开关的指示LED */
-  int pin_pwm; /* 输出PWM给触摸面板 */
   int pin_touch; /* 接受来自触摸面板的开关信号  */
 
   int ctrl_value; /* 当前继电器状态 */
 
   int touch_value; /* 当前触摸面板认为的开关状态 */
-  int low_cnt; /* 触摸面板开关信号为0的计数, 当超过阈值, 认为是关信号(因为面板输出不稳定的脉冲) */
+  int low_cnt; /* 触摸面板开关信号为低的计数, 当超过 MAX_LOW_CNT, 认为是关信号(因为面板输出不稳定的脉冲) */
 
 public:
-  Child(int pin_ctrl, int pin_led, int pin_pwm, int pin_touch) {
+  ChildSwitch(int pin_ctrl, int pin_led, int pin_touch) {
     this->pin_ctrl = pin_ctrl;
     this->pin_led = pin_led;
-    this->pin_pwm = pin_pwm;
+//    this->pin_pwm = pin_pwm;
     this->pin_touch = pin_touch;
 
     pinMode(this->pin_ctrl, OUTPUT);
@@ -68,8 +66,8 @@ public:
 
     pinMode(this->pin_led, INPUT);
 
-    SetPinFrequencySafe(this->pin_pwm, 50);
-    pwmWrite(this->pin_pwm, 127);
+//    SetPinFrequencySafe(this->pin_pwm, 50);
+//    pwmWrite(this->pin_pwm, 127);
 
     pinMode(this->pin_touch, INPUT);
 
@@ -89,10 +87,9 @@ public:
   }
 
   int check_touch() {
-    int i = 0;
-    i = analogRead(this->pin_touch);
-  
-    if (i < MAX_LOW_ANNALOG) {
+    int v = analogRead(this->pin_touch);
+
+    if (v < MAX_LOW_ANNALOG) {
       ++this->low_cnt;
       if (this->low_cnt >= MAX_LOW_CNT) {
         this->low_cnt = 0;
@@ -121,10 +118,12 @@ public:
     this->ctrl_value = value;
     if (value) {
       digitalWrite(this->pin_ctrl, HIGH);
-      pinMode(this->pin_led, INPUT);
-      digitalWrite(this->pin_led, LOW);
+
+      pinMode(this->pin_led, OUTPUT);
+      analogWrite(this->pin_led, 128); /* 拉低 LED 的负极, 使它更亮(LED 的正极接的是电源正极) */
     } else {
       digitalWrite(this->pin_ctrl, LOW);
+
       pinMode(this->pin_led, INPUT);
     }
   }
@@ -252,10 +251,10 @@ void handle_input() {
 }
 
 void init_child() {
-  InitTimersSafe();
+//  InitTimersSafe();
 
   for (int i = 0; i < CHILD_NUM; i++) {
-    g_child[i] = new Child(FIRST_PIN_CTRL + i, FIRST_PIN_LED + i, FIRST_PIN_PWM + i, FIRST_PIN_TOUCH + i);
+    g_child[i] = new ChildSwitch(FIRST_PIN_CTRL + i, FIRST_PIN_LED + i, FIRST_PIN_TOUCH + i);
   }
 }
 
