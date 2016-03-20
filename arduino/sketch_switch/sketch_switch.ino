@@ -58,16 +58,12 @@ public:
   ChildSwitch(int pin_ctrl, int pin_led, int pin_touch) {
     this->pin_ctrl = pin_ctrl;
     this->pin_led = pin_led;
-//    this->pin_pwm = pin_pwm;
     this->pin_touch = pin_touch;
 
     pinMode(this->pin_ctrl, OUTPUT);
     digitalWrite(this->pin_ctrl, LOW);
 
     pinMode(this->pin_led, INPUT);
-
-//    SetPinFrequencySafe(this->pin_pwm, 50);
-//    pwmWrite(this->pin_pwm, 127);
 
     pinMode(this->pin_touch, INPUT);
 
