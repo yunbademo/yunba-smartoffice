@@ -21,10 +21,10 @@
 #define FIRST_PIN_TOUCH A1
 
 /* 检测到 MAX_LOW_CNT 次小于 MAX_LOW_ANNALOG 的电压后, 认为是面板发出了关的信号 */
-#define MAX_LOW_CNT 16
+#define MAX_LOW_CNT 200
 #define MAX_LOW_ANNALOG 192
 
-#define CHILD_NUM 3
+#define CHILD_NUM 1
 
 
 class ChildSwitch;
@@ -183,7 +183,7 @@ void recv_body() {
 }
 
 void handle_msg() {
-  StaticJsonBuffer<128> jsonBuffer;
+  StaticJsonBuffer<256> jsonBuffer;
 
   JsonObject& root = jsonBuffer.parseObject((char *)g_buf);
   if (!root.success()) {
@@ -224,7 +224,7 @@ void send_msg() {
 }
 
 void report_status() {
-  StaticJsonBuffer<128> jsonBuffer;
+  StaticJsonBuffer<256> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
 
   root["devid"] = g_devid;
@@ -273,7 +273,7 @@ void loop() {
   }
 
   for (int i = 0; i < CHILD_NUM; i++) {
-    g_child[i]->loop();
+//    g_child[i]->loop();
   }
 
   delay(1);

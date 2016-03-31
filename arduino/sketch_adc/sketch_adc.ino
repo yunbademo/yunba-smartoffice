@@ -41,6 +41,8 @@ inline void read_input() {
     g_data += (v * f);
     f *= 3;
   }
+  //Serial.println("data is:");
+  //Serial.println(g_data);
 }
 
 inline void write_output() {
@@ -58,7 +60,5 @@ inline void write_output() {
 
 void loop() {
   read_input();
-  Serial.println("data is:");
-  Serial.println(g_data);
   write_output();
 }
