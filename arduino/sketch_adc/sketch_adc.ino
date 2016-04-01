@@ -6,8 +6,6 @@
 #define IN_NUM (4)
 #define OUT_NUM (7)
 
-int g_data = 0;
-
 void setup() {
   Serial.begin(115200);
   Serial.println("setup...");
@@ -16,19 +14,25 @@ void setup() {
     pinMode(IN_PIN + i, INPUT);
   }
 
+#if 0
   for (int i = 0; i < OUT_NUM; i++) {
     pinMode(OUT_PIN + i, OUTPUT);
     digitalWrite(OUT_PIN + i, LOW);
   }
+#endif
+
+  DDRD |= B11111100;
+  DDRB |= B00000001;
 }
 
-inline void read_input() {
+void loop() {
+  int i = 0;
   int v = 0;
   int f = 1;
+  uint8_t data = 0;
+  uint8_t u = 0;
 
-  g_data = 0;
-
-  for (int i = 0; i < IN_NUM; i++) {
+  for (i = 0; i < IN_NUM; i++) {
     v = analogRead(IN_PIN + i);
     if (v < 32) {
       v = 0;
@@ -38,27 +42,16 @@ inline void read_input() {
       v = 2;
     }
 
-    g_data += (v * f);
+    data += (v * f);
     f *= 3;
   }
-  //Serial.println("data is:");
-  //Serial.println(g_data);
-}
 
-inline void write_output() {
-  int r = 0;
-  for (int i = 0; i < OUT_NUM; i++) {
-    r = g_data % 2;
-    if (r == 0) {
-      digitalWrite(OUT_PIN + i, LOW);
-    } else {
-      digitalWrite(OUT_PIN + i, HIGH);
-    }
-    g_data = g_data / 2;
-  }
-}
+//  Serial.println("seg_s:");
+//  Serial.println(data);
 
-void loop() {
-  read_input();
-  write_output();
+  u = ((data << 2) & B11111100) | (PORTD & B00000011);
+  PORTD = u;
+
+  u = ((data >> 6) & B00000001) | (PORTB & B11111110);
+  PORTB = u;
 }

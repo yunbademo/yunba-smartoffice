@@ -8,6 +8,13 @@
 */
 #include <ArduinoJson.h>
 
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
 #define MSG_TYPE_UP 0x01
 #define MSG_TYPE_DOWN 0x02
 
@@ -53,6 +60,9 @@ unsigned long g_check_ms = 0;
 uint8_t g_com[COM_NUM];
 uint8_t g_seg[SEG_NUM];
 
+int g_com_tmp[COM_NUM];
+int g_seg_tmp[SEG_NUM];
+
 uint8_t g_data_last[COM_NUM][SEG_NUM];
 uint8_t g_data[COM_NUM][SEG_NUM];
 
@@ -65,7 +75,7 @@ int g_room_temp;
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
     Serial.readBytes(g_header, 1);
-//    Serial.println((uint8_t)g_header[0], HEX);
+//    //Serial.println((uint8_t)g_header[0], HEX);
     if (g_header[0] == FLAG_CHAR) {
       break;
     }
@@ -85,11 +95,11 @@ void recv_header() {
   ((uint8_t *)&g_body_len)[0] = g_header[3];
   ((uint8_t *)&g_body_len)[1] = g_header[2];
 
-  Serial.println("len:");
-  Serial.println(g_body_len);
+  //Serial.println("len:");
+  //Serial.println(g_body_len);
 
   if (g_body_len > (BUF_LEN - HEADER_LEN - 1)) {
-    Serial.println("too long msg");
+    //Serial.println("too long msg");
     return;
   }
 
@@ -109,8 +119,8 @@ void recv_body() {
 
   // now got a completed msg
   g_buf[g_body_len] = 0;
-  Serial.println("got a msg:");
-  Serial.println((char *)g_buf);
+  //Serial.println("got a msg:");
+  //Serial.println((char *)g_buf);
 
   handle_msg();
 
@@ -123,12 +133,12 @@ void handle_msg() {
 
   JsonObject& root = jsonBuffer.parseObject((char *)g_buf);
   if (!root.success()) {
-    Serial.println("parseObject");
+    //Serial.println("parseObject");
     return;
   }
 
   if (strcmp(root["devid"], g_devid) != 0) {
-    Serial.println("not my devid");
+    //Serial.println("not my devid");
     return;
   }
 
@@ -169,17 +179,34 @@ void handle_input() {
 }
 
 void read_status() {
-  int data = 0;
+  uint8_t data = 0;
   int i = 0;
   int v = 0;
   int f = 1;
 
   /* 先读从片 SEG */
+#if 0
   for (i = 0; i < SEG_PIN_NUM_S; i++) {
     v = digitalRead(SEG_PIN_S + i);
     data += (v * f);
     f *= 2;
   }
+#else
+  data = ((PIND >> 2) & B00111111);
+  data |= ((PINB << 6) & B01000000);
+#endif
+
+  /* 读主片的 COM */
+  for (i = 0; i < COM_NUM; i++) {
+    g_com_tmp[i] = analogRead(COM_PIN + i);
+  }
+  /* 读主片的 SEG */
+  for (i = 0; i < SEG_NUM_M; i++) {
+    g_seg_tmp[i] = analogRead(SEG_PIN_M + i);
+  }
+
+  //Serial.println("seg_s:");
+  //Serial.println(data);
 
   /* 转换 */
   for (i = 0; i < SEG_NUM_S; i++) {
@@ -187,11 +214,10 @@ void read_status() {
     g_seg[SEG_INDEX_S + i] = v;
     data /= 3;
   }
-
-  /* 读主片的 SEG */
-  Serial.println("seg:");
+  
+  //Serial.println("seg:");
   for (i = 0; i < SEG_NUM_M; i++) {
-    v = analogRead(SEG_PIN_M + i);
+    v = g_seg_tmp[i];
     if (v < MIN_ANALOG_V) {
       v = 0;
     } else if (v > MAX_ANALOG_V) {
@@ -200,14 +226,13 @@ void read_status() {
       v = 2;
     }
     g_seg[SEG_INDEX_M + i] = v;
-    Serial.print(v, DEC);
+    //Serial.print(v, DEC);
   }
-  Serial.println();
+  //Serial.println();
 
-  /* 读主片的 COM */
-  Serial.println("com:");
+  //Serial.println("com:");
   for (i = 0; i < COM_NUM; i++) {
-    v = analogRead(COM_PIN + i);
+    v = g_com_tmp[i];
     if (v < MIN_ANALOG_V) {
       v = 0;
     } else if (v > MAX_ANALOG_V) {
@@ -216,12 +241,9 @@ void read_status() {
       v = 2;
     }
     g_com[i] = v;
-    Serial.print(v, DEC);
+    //Serial.print(v, DEC);
   }
-  Serial.println();
-
-  //Serial.println("get data:");
-  //Serial.println(data);
+  //Serial.println();
 }
 
 int make_number(int seg_index) {
@@ -233,6 +255,7 @@ int make_number(int seg_index) {
   i = g_data[0][seg_index];
   i += g_data[1][seg_index] * 2;
   i += g_data[2][seg_index] * 4;
+
   switch (i) {
     case 0x05:
       j = 1;
@@ -253,6 +276,7 @@ int make_number(int seg_index) {
   i += g_data[1][seg_index + 1] * 16;
   i += g_data[2][seg_index + 1] * 32;
   i += g_data[1][seg_index + 2] * 64;
+
   switch (i) {
     case 0x3f:
       k = 0;
@@ -290,19 +314,21 @@ int make_number(int seg_index) {
 }
 
 void handle_status() {
-  Serial.println("data:");
+  ////Serial.println("data:");
   for (int i = 0; i < COM_NUM; i++) {
     for (int j = 0; j < SEG_NUM; j++) {
-      if (g_com[i] == 2 || g_seg[j] == 2) {
-        g_data[i][j] = 0;
-      } else {
-        g_data[i][j] = abs(g_com[i] - g_seg[j]);
+      if (g_com[i] != 2) {
+        if (g_seg[j] == 2) {
+          g_data[i][j] = 0;
+        } else {
+          g_data[i][j] = abs(g_com[i] - g_seg[j]);
+        }
       }
-      Serial.print(g_data[i][j], DEC);
+      //Serial.print(g_data[i][j], DEC);
     }
-    Serial.println();
+    //Serial.println();
   }
-  Serial.println();
+  //Serial.println();
 
   if (memcmp(g_data, g_data_last, COM_NUM * SEG_NUM) == 0) {
     return;
@@ -355,8 +381,11 @@ void handle_status() {
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  //Serial.setTimeout(100);
   Serial.println("setup...");
+
+  sbi(ADCSRA,ADPS2);
+  cbi(ADCSRA,ADPS1);
+  cbi(ADCSRA,ADPS0);
 
   for (int i = 0; i < COM_NUM; i++) {
     pinMode(COM_PIN + i, INPUT);
@@ -364,9 +393,15 @@ void setup() {
   for (int i = 0; i < SEG_NUM_M; i++) {
     pinMode(SEG_PIN_M + i, INPUT);
   }
+#if 0
   for (int i = 0; i < SEG_PIN_NUM_S; i++) {
     pinMode(SEG_PIN_S + i, INPUT);
   }
+#else
+  DDRD &= B00000011;
+  DDRB &= B11111110;
+#endif
+
   pinMode(PIN_ON_OFF, OUTPUT);
   digitalWrite(PIN_ON_OFF, LOW);
   pinMode(PIN_MODE, OUTPUT);
@@ -381,7 +416,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  handle_input();
+//  handle_input();
 
   read_status();
   handle_status();
@@ -391,5 +426,5 @@ void loop() {
     g_need_report = 0;
   }
 
-  delay(1);
+  delay(200);
 }
