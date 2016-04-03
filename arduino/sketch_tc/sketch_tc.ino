@@ -34,8 +34,10 @@
 #define PIN_ADD_TEMP 12
 #define PIN_DEC_TEMP 13
 
-#define MIN_ANALOG_V 32
-#define MAX_ANALOG_V 992
+#define MIN_ANALOG_V 96
+#define MAX_ANALOG_V 928
+
+#define MAX_STABLE_CNT 32 /* 去除波动，这么多次数据不变后才上报状态 */
 
 
 const char *g_devid = "air-condition_0";
@@ -56,11 +58,18 @@ uint8_t g_com_cmp[COM_NUM];
 uint8_t g_data_last[COM_NUM][SEG_NUM];
 uint8_t g_data[COM_NUM][SEG_NUM];
 
-int g_on_off; /* 1: on, 2: off */
-int g_mode; /* 1: cool, 2: hot */
-int g_fan; /* 1: hi, 2: mid, 3: low, 4: auto */
-int g_set_temp;
-int g_room_temp;
+uint8_t g_data_slave = 0;
+uint8_t g_data_last_slave = 0;
+uint8_t g_data_cmp_slave = 0;
+
+uint8_t g_on_off; /* 1: on, 2: off */
+uint8_t g_mode; /* 1: cool, 2: hot */
+uint8_t g_fan; /* 1: hi, 2: mid, 3: low, 4: auto */
+uint8_t g_set_temp;
+uint8_t g_room_temp;
+
+uint8_t g_stable_cnt = 0; /* 稳定次数 */
+uint8_t g_stable_cnt_slave = 0;
 
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
@@ -178,25 +187,28 @@ inline int trans(int i) {
   }
 }
 
-
 int make_number(int seg_index) {
-  int i = 0;
-  int j = 0;
-  int k = 0;
+  uint8_t i = 0;
+  uint8_t j = 0;
+  uint8_t k = 0;
 
   /* 十位: CGB */
-  i = g_data[0][seg_index];
-  i += g_data[1][seg_index] * 2;
-  i += g_data[2][seg_index] * 4;
+  i = g_data[3][seg_index];
+  i += g_data[0][seg_index] * 2;
+  i += g_data[1][seg_index] * 4;
+  i += g_data[2][seg_index] * 8;
 
   switch (i) {
-    case 0x05:
+    case 0x0f:
+      j = 0;
+      break;
+    case 0x00:
       j = 1;
       break;
-    case 0x06:
+    case 0x07:
       j = 2;
       break;
-    case 0x07:
+    case 0x03:
       j = 3;
       break;
     default:
@@ -250,65 +262,46 @@ int make_number(int seg_index) {
   return j * 10 + k;
 }
 
-#if 0
-void handle_status_2() {
-   int v = 0;
-  uint8_t data = 0;
-
-  data = ((PIND >> 2) & B00111111);
-  data |= ((PINB << 6) & B01000000);
-    /* 转换 */
-  for (i = 0; i < SEG_NUM_S; i++) {
-    v = data % 3;
-    g_seg[SEG_INDEX_S + i] = v;
-    data /= 3;
-  }
-  /* g_fan */
-  if (g_data[1][1]) {
-    g_fan = 1;
-    g_on_off = 1;
-  } else if (g_data[2][1]) {
-    g_fan = 2;
-    g_on_off = 1;
-  } else if (g_data[3][1]) {
-    g_fan = 3;
-    g_on_off = 1;
-  } else if (g_data[3][2]) {
-    g_fan = 4;
-    g_on_off = 1;
-  } else {
-    g_on_off = 2;
-  }
-
-  /* g_set_temp */
-  g_set_temp = make_number(2);
-}
-#endif
-
-void handle_status_2() {
-  uint8_t data = 0;
-  uint8_t data_cmp = 0;
+void handle_status_slave() {
+  int i = 0;
   int t = 100;
 
   while (t--) {
-    data = ((PIND >> 2) & B00111111);
-    data |= ((PINB << 6) & B01000000);
+    g_data_slave = ((PIND >> 2) & B00111111);
+    g_data_slave |= ((PINB << 6) & B01000000);
 
     delay(2);
 
-    data_cmp = ((PIND >> 2) & B00111111);
-    data_cmp |= ((PINB << 6) & B01000000);
+    g_data_cmp_slave = ((PIND >> 2) & B00111111);
+    g_data_cmp_slave |= ((PINB << 6) & B01000000);
 
-    if (data == data_cmp) {
+    if (g_data_slave == g_data_cmp_slave) {
+      //Serial.println("slave data:");
+      //Serial.println(data);
       break;
     }
   }
 
+  if (g_data_slave == g_data_last_slave) {
+    if (g_stable_cnt_slave >= MAX_STABLE_CNT) {
+      return; /* reported */
+    }
+    g_stable_cnt_slave++;
+    if (g_stable_cnt_slave < MAX_STABLE_CNT) {
+      return;
+    }
+  } else {
+    g_data_last_slave = g_data_slave;
+    g_stable_cnt_slave = 0;
+    return;
+  }
+
   /* g_fan */
-  g_fan = ((data >> 5) & B00000011) + 1;
+  g_fan = ((g_data_slave >> 5) & B00000011) + 1;
 
   /* g_set_temp */
-  g_set_temp = (data & B00011111) + 5;
+  g_set_temp = (g_data_slave & B00011111) + 5;
+  g_need_report = 1;
 }
 
 void handle_status() {
@@ -354,10 +347,18 @@ void handle_status() {
   }
 
   if (memcmp(g_data, g_data_last, COM_NUM * SEG_NUM) == 0) {
+    if (g_stable_cnt >= MAX_STABLE_CNT) {
+      return; /* reported */
+    }
+    g_stable_cnt++;
+    if (g_stable_cnt < MAX_STABLE_CNT) {
+      return;
+    }
+  } else {
+    memcpy(g_data_last, g_data, COM_NUM * SEG_NUM);
+    g_stable_cnt = 0;
     return;
   }
-
-  memcpy(g_data_last, g_data, COM_NUM * SEG_NUM);
 
   /* g_mode */
   if (g_data[1][0]) {
@@ -426,10 +427,10 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-//  handle_input();
+  handle_input();
 
   handle_status();
-//  handle_status_2();
+  handle_status_slave();
 
   if (g_need_report) {
     print_status();
@@ -437,5 +438,5 @@ void loop() {
     g_need_report = 0;
   }
 
-  delay(200);
+//  delay(100);
 }
