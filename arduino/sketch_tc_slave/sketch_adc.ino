@@ -6,6 +6,9 @@
 #define IN_NUM (4)
 #define OUT_NUM (7)
 
+#define MIN_ANALOG_V 32
+#define MAX_ANALOG_V 992
+
 void setup() {
   Serial.begin(115200);
   Serial.println("setup...");
@@ -34,9 +37,9 @@ void loop() {
 
   for (i = 0; i < IN_NUM; i++) {
     v = analogRead(IN_PIN + i);
-    if (v < 32) {
+    if (v < MIN_ANALOG_V) {
       v = 0;
-    } else if (v > 992) {
+    } else if (v > MAX_ANALOG_V) {
       v = 1;
     } else {
       v = 2;
@@ -47,11 +50,12 @@ void loop() {
   }
 
 //  Serial.println("seg_s:");
-//  Serial.println(data);
+  Serial.println(data);
 
   u = ((data << 2) & B11111100) | (PORTD & B00000011);
   PORTD = u;
 
   u = ((data >> 6) & B00000001) | (PORTB & B11111110);
   PORTB = u;
+//  delay(100);
 }

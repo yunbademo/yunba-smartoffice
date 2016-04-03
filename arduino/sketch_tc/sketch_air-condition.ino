@@ -22,19 +22,11 @@
 #define BUF_LEN 256
 #define FLAG_CHAR 0xaa
 
-#define SEG_NUM 8
 #define COM_NUM 4
+#define SEG_NUM 4
 
 #define COM_PIN A0
-
-#define SEG_NUM_M 4
-#define SEG_INDEX_M 4
-#define SEG_PIN_M A4
-
-#define SEG_NUM_S 4
-#define SEG_INDEX_S 0
-#define SEG_PIN_S 2
-#define SEG_PIN_NUM_S 7
+#define SEG_PIN A4
 
 #define PIN_ON_OFF 9
 #define PIN_MODE 10
@@ -59,9 +51,7 @@ unsigned long g_check_ms = 0;
 
 uint8_t g_com[COM_NUM];
 uint8_t g_seg[SEG_NUM];
-
-int g_com_tmp[COM_NUM];
-int g_seg_tmp[SEG_NUM];
+uint8_t g_com_cmp[COM_NUM];
 
 uint8_t g_data_last[COM_NUM][SEG_NUM];
 uint8_t g_data[COM_NUM][SEG_NUM];
@@ -178,73 +168,16 @@ void handle_input() {
   }
 }
 
-void read_status() {
-  uint8_t data = 0;
-  int i = 0;
-  int v = 0;
-  int f = 1;
-
-  /* 先读从片 SEG */
-#if 0
-  for (i = 0; i < SEG_PIN_NUM_S; i++) {
-    v = digitalRead(SEG_PIN_S + i);
-    data += (v * f);
-    f *= 2;
+inline int trans(int i) {
+  if (i < MIN_ANALOG_V) {
+    return 0;
+  } else if (i > MAX_ANALOG_V) {
+    return 1;
+  } else {
+    return 2;
   }
-#else
-  data = ((PIND >> 2) & B00111111);
-  data |= ((PINB << 6) & B01000000);
-#endif
-
-  /* 读主片的 COM */
-  for (i = 0; i < COM_NUM; i++) {
-    g_com_tmp[i] = analogRead(COM_PIN + i);
-  }
-  /* 读主片的 SEG */
-  for (i = 0; i < SEG_NUM_M; i++) {
-    g_seg_tmp[i] = analogRead(SEG_PIN_M + i);
-  }
-
-  //Serial.println("seg_s:");
-  //Serial.println(data);
-
-  /* 转换 */
-  for (i = 0; i < SEG_NUM_S; i++) {
-    v = data % 3;
-    g_seg[SEG_INDEX_S + i] = v;
-    data /= 3;
-  }
-  
-  //Serial.println("seg:");
-  for (i = 0; i < SEG_NUM_M; i++) {
-    v = g_seg_tmp[i];
-    if (v < MIN_ANALOG_V) {
-      v = 0;
-    } else if (v > MAX_ANALOG_V) {
-      v = 1;
-    } else {
-      v = 2;
-    }
-    g_seg[SEG_INDEX_M + i] = v;
-    //Serial.print(v, DEC);
-  }
-  //Serial.println();
-
-  //Serial.println("com:");
-  for (i = 0; i < COM_NUM; i++) {
-    v = g_com_tmp[i];
-    if (v < MIN_ANALOG_V) {
-      v = 0;
-    } else if (v > MAX_ANALOG_V) {
-      v = 1;
-    } else {
-      v = 2;
-    }
-    g_com[i] = v;
-    //Serial.print(v, DEC);
-  }
-  //Serial.println();
 }
+
 
 int make_number(int seg_index) {
   int i = 0;
@@ -266,6 +199,8 @@ int make_number(int seg_index) {
     case 0x07:
       j = 3;
       break;
+    default:
+      return -1;
   }
 
   /* 个位: ABCDEFG */
@@ -293,7 +228,7 @@ int make_number(int seg_index) {
     case 0x66:
       k = 4;
       break;
-    case 0x4d:
+    case 0x6d:
       k = 5;
       break;
     case 0x7d:
@@ -308,27 +243,115 @@ int make_number(int seg_index) {
     case 0x6f:
       k = 9;
       break;
+    default:
+      return -1;
   }
 
   return j * 10 + k;
 }
 
-void handle_status() {
-  ////Serial.println("data:");
-  for (int i = 0; i < COM_NUM; i++) {
-    for (int j = 0; j < SEG_NUM; j++) {
-      if (g_com[i] != 2) {
-        if (g_seg[j] == 2) {
-          g_data[i][j] = 0;
-        } else {
-          g_data[i][j] = abs(g_com[i] - g_seg[j]);
-        }
-      }
-      //Serial.print(g_data[i][j], DEC);
-    }
-    //Serial.println();
+#if 0
+void handle_status_2() {
+   int v = 0;
+  uint8_t data = 0;
+
+  data = ((PIND >> 2) & B00111111);
+  data |= ((PINB << 6) & B01000000);
+    /* 转换 */
+  for (i = 0; i < SEG_NUM_S; i++) {
+    v = data % 3;
+    g_seg[SEG_INDEX_S + i] = v;
+    data /= 3;
   }
-  //Serial.println();
+  /* g_fan */
+  if (g_data[1][1]) {
+    g_fan = 1;
+    g_on_off = 1;
+  } else if (g_data[2][1]) {
+    g_fan = 2;
+    g_on_off = 1;
+  } else if (g_data[3][1]) {
+    g_fan = 3;
+    g_on_off = 1;
+  } else if (g_data[3][2]) {
+    g_fan = 4;
+    g_on_off = 1;
+  } else {
+    g_on_off = 2;
+  }
+
+  /* g_set_temp */
+  g_set_temp = make_number(2);
+}
+#endif
+
+void handle_status_2() {
+  uint8_t data = 0;
+  uint8_t data_cmp = 0;
+  int t = 100;
+
+  while (t--) {
+    data = ((PIND >> 2) & B00111111);
+    data |= ((PINB << 6) & B01000000);
+
+    delay(2);
+
+    data_cmp = ((PIND >> 2) & B00111111);
+    data_cmp |= ((PINB << 6) & B01000000);
+
+    if (data == data_cmp) {
+      break;
+    }
+  }
+
+  /* g_fan */
+  g_fan = ((data >> 5) & B00000011) + 1;
+
+  /* g_set_temp */
+  g_set_temp = (data & B00011111) + 5;
+}
+
+void handle_status() {
+  int i = 0;
+  int j = 0;
+  int v = 0;
+  int f = 1;
+  int t = 100;
+
+  while (t--) {
+    /* 读 COM */
+    for (i = 0; i < COM_NUM; i++) {
+      g_com_cmp[i] = trans(analogRead(COM_PIN + i));
+    }
+    /* 读 SEG */
+    for (i = 0; i < SEG_NUM; i++) {
+      g_seg[i] = trans(analogRead(SEG_PIN + i));
+    }
+
+    /* 再读 COM */
+    for (i = 0; i < COM_NUM; i++) {
+      g_com[i] = trans(analogRead(COM_PIN + i));
+    }
+
+    /* 两次读的 COM 没变，才认为这次读的有效 */
+    if (memcmp(g_com, g_com_cmp, COM_NUM) == 0) {
+      //Serial.println("valid reading");
+      break;
+    }
+  }
+  
+  for (i = 0; i < COM_NUM; i++) {
+    if (g_com[i] == 2) {
+      continue;
+    }
+    for (j = 0; j < SEG_NUM; j++) {
+      if (g_seg[j] == 2) {
+        g_data[i][j] = 0;
+      } else {
+        g_data[i][j] = abs(g_com[i] - g_seg[j]);
+      }
+    }
+  }
 
   if (memcmp(g_data, g_data_last, COM_NUM * SEG_NUM) == 0) {
     return;
@@ -336,7 +359,7 @@ void handle_status() {
 
   memcpy(g_data_last, g_data, COM_NUM * SEG_NUM);
 
-  /* g_mode & g_on_off */
+  /* g_mode */
   if (g_data[1][0]) {
     g_mode = 1;
     g_on_off = 1;
@@ -347,22 +370,16 @@ void handle_status() {
     g_on_off = 2;
   }
 
-  /* g_fan */
-  if (g_data[1][1]) {
-    g_fan = 1;
-  } else if (g_data[2][1]) {
-    g_fan = 2;
-  } else if (g_data[3][1]) {
-    g_fan = 3;
-  } else if (g_data[3][2]) {
-    g_fan = 4;
-  }
-
-  /* g_set_temp */
-  g_set_temp = make_number(2);
   /* g_room_temp */
-  g_room_temp = make_number(5);
+  i = make_number(1);
+  if (i != -1) {
+    g_room_temp = i;
+  }
+ 
+  g_need_report = 1;
+}
 
+void print_status() {
   Serial.println("status:");
   Serial.print(' ');
   Serial.print(g_on_off, DEC);
@@ -374,8 +391,6 @@ void handle_status() {
   Serial.print(g_set_temp, DEC);
   Serial.print(' ');
   Serial.println(g_room_temp);
- 
-  g_need_report = 0;
 }
 
 void setup() {
@@ -390,17 +405,12 @@ void setup() {
   for (int i = 0; i < COM_NUM; i++) {
     pinMode(COM_PIN + i, INPUT);
   }
-  for (int i = 0; i < SEG_NUM_M; i++) {
-    pinMode(SEG_PIN_M + i, INPUT);
+  for (int i = 0; i < SEG_NUM; i++) {
+    pinMode(SEG_PIN + i, INPUT);
   }
-#if 0
-  for (int i = 0; i < SEG_PIN_NUM_S; i++) {
-    pinMode(SEG_PIN_S + i, INPUT);
-  }
-#else
+
   DDRD &= B00000011;
   DDRB &= B11111110;
-#endif
 
   pinMode(PIN_ON_OFF, OUTPUT);
   digitalWrite(PIN_ON_OFF, LOW);
@@ -418,11 +428,12 @@ void loop() {
   // put your main code here, to run repeatedly:
 //  handle_input();
 
-  read_status();
   handle_status();
+//  handle_status_2();
 
   if (g_need_report) {
-    report_status();
+    print_status();
+//    report_status();
     g_need_report = 0;
   }
 
