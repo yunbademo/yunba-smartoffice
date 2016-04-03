@@ -31,16 +31,17 @@
 #define PIN_ON_OFF 9
 #define PIN_MODE 10
 #define PIN_FAN 11
-#define PIN_ADD_TEMP 12
-#define PIN_DEC_TEMP 13
+#define PIN_INC 12
+#define PIN_DEC 13
 
 #define MIN_ANALOG_V 96
 #define MAX_ANALOG_V 928
 
-#define MAX_STABLE_CNT 32 /* 去除波动，这么多次数据不变后才上报状态 */
+#define MAX_STABLE_CNT 32 /* 去除波动，MAX_STABLE_CNT 次数据不变后才上报状态 */
 
+#define SIM_BTN_DELAY 32
 
-const char *g_devid = "air-condition_0";
+const char *g_devid = "temp_ctrl_0";
 
 uint8_t g_header[HEADER_LEN];
 uint8_t g_buf[BUF_LEN];
@@ -141,8 +142,29 @@ void handle_msg() {
     return;
   }
 
-  if (strcmp(root["cmd"], "ac_set") == 0) {
-  } else if (strcmp(root["cmd"], "ac_get") == 0) {
+  Serial.println((const char *)root["cmd"]);
+
+  if (strcmp(root["cmd"], "on_off") == 0) {
+    digitalWrite(PIN_ON_OFF, LOW);
+    delay(SIM_BTN_DELAY);
+    digitalWrite(PIN_ON_OFF, HIGH);
+  } else if (strcmp(root["cmd"], "mode") == 0) {
+    digitalWrite(PIN_MODE, LOW);
+    delay(SIM_BTN_DELAY);
+    digitalWrite(PIN_MODE, HIGH);
+  } else if (strcmp(root["cmd"], "fan") == 0) {
+    digitalWrite(PIN_FAN, LOW);
+    delay(SIM_BTN_DELAY);
+    digitalWrite(PIN_FAN, HIGH);
+  } else if (strcmp(root["cmd"], "inc") == 0) {
+    digitalWrite(PIN_INC, LOW);
+    delay(SIM_BTN_DELAY);
+    digitalWrite(PIN_INC, HIGH);
+  } else if (strcmp(root["cmd"], "dec") == 0) {
+    digitalWrite(PIN_DEC, LOW);
+    delay(SIM_BTN_DELAY);
+    digitalWrite(PIN_DEC, HIGH);
+  } else if (strcmp(root["cmd"], "get") == 0) {
     g_need_report = 1;
   }
 }
@@ -163,7 +185,13 @@ void report_status() {
   root["devid"] = g_devid;
 
   JsonArray& st = root.createNestedArray("status");
-  
+
+  st.add(g_on_off);
+  st.add(g_mode);
+  st.add(g_fan);
+  st.add(g_set_temp);
+  st.add(g_room_temp);
+
   g_body_len = root.printTo((char *)g_buf + HEADER_LEN, BUF_LEN - HEADER_LEN);
 
   send_msg();
@@ -414,15 +442,15 @@ void setup() {
   DDRB &= B11111110;
 
   pinMode(PIN_ON_OFF, OUTPUT);
-  digitalWrite(PIN_ON_OFF, LOW);
+  digitalWrite(PIN_ON_OFF, HIGH);
   pinMode(PIN_MODE, OUTPUT);
-  digitalWrite(PIN_MODE, LOW);
+  digitalWrite(PIN_MODE, HIGH);
   pinMode(PIN_FAN, OUTPUT);
-  digitalWrite(PIN_FAN, LOW);
-  pinMode(PIN_ADD_TEMP, OUTPUT);
-  digitalWrite(PIN_ADD_TEMP, LOW);
-  pinMode(PIN_DEC_TEMP, OUTPUT);
-  digitalWrite(PIN_DEC_TEMP, LOW);
+  digitalWrite(PIN_FAN, HIGH);
+  pinMode(PIN_INC, OUTPUT);
+  digitalWrite(PIN_INC, HIGH);
+  pinMode(PIN_DEC, OUTPUT);
+  digitalWrite(PIN_DEC, HIGH);
 }
 
 void loop() {
@@ -434,7 +462,7 @@ void loop() {
 
   if (g_need_report) {
     print_status();
-//    report_status();
+    report_status();
     g_need_report = 0;
   }
 
