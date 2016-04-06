@@ -7,11 +7,11 @@
 
 下图为制作完成的智能开关：
 
-![1.jpg](../images/3.jpg)
+![3.jpg](../images/3.jpg)
 
 这是拆开后的内部图：
 
-![2.jpg](../images/4.jpg)
+![4.jpg](../images/4.jpg)
 
 需要的元件
 --------
@@ -20,7 +20,7 @@
 2. Arduino Pro Mini 1 个，作为控制器，[购买链接][5]。
 3. Zigbee 模块两个，一个集成在开关内部，另一个接入互联网，[购买链接][6]。
 4. Arduino Pro Mini 专用 miniUSB 接口，用于烧写程序，[购买链接][7]。
-5. USB 转串口线，用于连接 Zigbee 模块和 PC 机器作为网关，[购买链接][13]。
+5. USB 转串口线，用于连接 Zigbee 模块和 PC 机作为网关，[购买链接][13]。
 6. 各种导线若干，见智能开关内部图。
 
 代码
@@ -41,11 +41,11 @@
 安装及测试
 ------
 
-安装之前需要先配置 Zigbee 模块，我们配置成：波特率 115200，AB 模式。是两个模块能正常通讯，参考模块厂家的 [配置视频][11]。
+安装之前需要先配置 Zigbee 模块，我们配置成：波特率 115200，广播模式。使两个模块能正常通讯，参考模块厂家的 [配置视频][11]。
 
-配置好后，将各元件连接，并安装好。然后将开关接入交流电路中。并将另一个 Zigbee 模块通过 USB 转串线接在安装了 Python 的 PC 机上，并运行串口网关代码。正常情况下就可以通过 [Web][12] 端查看智能开关的状态并对其进行控制了。需要注意的是要保证开关代码和串口网关代码中的 Appkey，Devid，Topic 等参数与 Web 中的一致。Web 端如下图：
+配置好后，将各元件连接，并安装好。然后将开关接入交流电路中。并将另一个 Zigbee 模块通过 USB 转串线接在安装了 Python 的 PC 机上，并运行串口网关代码。正常情况下就可以通过 [Web][12] 端查看智能开关的状态并对其进行控制了。需要注意的是要保证开关代码和串口网关代码中的 `Appkey`，`Devid`，`Topic` 等参数与 Web 中的一致。Web 端如下图：
 
-![3.png](../images/5.png)
+![5.png](../images/5.png)
 
 [1]: http://baike.baidu.com/link?url=Kcwx8ighfWCVc23x2V7q3uK0NhGk4vNAUnnUN4zYJFWbWpq68GvjoJHRJlOZsVZILpR_RJcBoes6-WNrCVW0Mq
 [2]: https://www.arduino.cc/en/Main/ArduinoBoardProMini
