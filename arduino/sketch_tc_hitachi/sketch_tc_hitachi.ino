@@ -28,18 +28,19 @@
 #define COM_PIN A0
 #define SEG_PIN A4
 
-#define PIN_ON_OFF 9
-#define PIN_MODE 10
-#define PIN_FAN 11
-#define PIN_INC 12
-#define PIN_DEC 13
+#define PIN_ON_OFF 3
+#define PIN_MODE 4
+#define PIN_FAN 5
+#define PIN_INC 6
+#define PIN_DEC 7
+#define PIN_ON_OFF_READ 8
 
 #define MIN_ANALOG_V 256
 #define MAX_ANALOG_V 938
 
 #define MAX_STABLE_CNT 32 /* 去除波动，MAX_STABLE_CNT 次数据不变后才上报状态 */
 
-#define SIM_BTN_DELAY 32
+#define SIM_BTN_DELAY 64
 
 const char *g_devid = "temp_ctrl_1";
 
@@ -128,6 +129,13 @@ void recv_body() {
   g_step = 1;
 }
 
+void press_btn(int pin) {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, LOW);
+    delay(SIM_BTN_DELAY);
+    pinMode(pin, INPUT);
+}
+
 void handle_msg() {
   StaticJsonBuffer<256> jsonBuffer;
 
@@ -145,25 +153,15 @@ void handle_msg() {
   Serial.println((const char *)root["cmd"]);
 
   if (strcmp(root["cmd"], "on_off") == 0) {
-    digitalWrite(PIN_ON_OFF, LOW);
-    delay(SIM_BTN_DELAY);
-    digitalWrite(PIN_ON_OFF, HIGH);
+    press_btn(PIN_ON_OFF);
   } else if (strcmp(root["cmd"], "mode") == 0) {
-    digitalWrite(PIN_MODE, LOW);
-    delay(SIM_BTN_DELAY);
-    digitalWrite(PIN_MODE, HIGH);
+    press_btn(PIN_MODE);
   } else if (strcmp(root["cmd"], "fan") == 0) {
-    digitalWrite(PIN_FAN, LOW);
-    delay(SIM_BTN_DELAY);
-    digitalWrite(PIN_FAN, HIGH);
+    press_btn(PIN_FAN);
   } else if (strcmp(root["cmd"], "inc") == 0) {
-    digitalWrite(PIN_INC, LOW);
-    delay(SIM_BTN_DELAY);
-    digitalWrite(PIN_INC, HIGH);
+    press_btn(PIN_INC);
   } else if (strcmp(root["cmd"], "dec") == 0) {
-    digitalWrite(PIN_DEC, LOW);
-    delay(SIM_BTN_DELAY);
-    digitalWrite(PIN_DEC, HIGH);
+    press_btn(PIN_DEC);
   } else if (strcmp(root["cmd"], "get") == 0) {
     g_need_report = 1;
   }
@@ -280,6 +278,17 @@ void handle_status() {
   int f = 1;
   int t = 64;
   uint8_t z = 0; /* 过滤掉全 0 的无效数据 */
+
+  /* g_on_off */
+  if (digitalRead(PIN_ON_OFF_READ) == 0) { /* on */
+    i = 1;
+  } else { /* off */
+    i = 2;
+  }
+  if (g_on_off != i) {
+    g_on_off = i;
+    g_need_report = 1;
+  }
 
   while (t--) {
     /* 读 COM */
@@ -409,16 +418,13 @@ void setup() {
     pinMode(SEG_PIN + i, INPUT);
   }
 
-  pinMode(PIN_ON_OFF, OUTPUT);
-  digitalWrite(PIN_ON_OFF, HIGH);
-  pinMode(PIN_MODE, OUTPUT);
-  digitalWrite(PIN_MODE, HIGH);
-  pinMode(PIN_FAN, OUTPUT);
-  digitalWrite(PIN_FAN, HIGH);
-  pinMode(PIN_INC, OUTPUT);
-  digitalWrite(PIN_INC, HIGH);
-  pinMode(PIN_DEC, OUTPUT);
-  digitalWrite(PIN_DEC, HIGH);
+  pinMode(PIN_ON_OFF, INPUT);
+  pinMode(PIN_MODE, INPUT);
+  pinMode(PIN_FAN, INPUT);
+  pinMode(PIN_INC, INPUT);
+  pinMode(PIN_DEC, INPUT);
+
+  pinMode(PIN_ON_OFF_READ, INPUT);
 }
 
 void loop() {
@@ -428,8 +434,8 @@ void loop() {
   handle_status();
 
   if (g_need_report) {
-    print_status();
-//    report_status();
+    //print_status();
+    report_status();
     g_need_report = 0;
   }
 
