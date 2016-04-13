@@ -1,6 +1,6 @@
 if [ $# -lt 2 ] ; then
-  echo usage: `basename ${0}` '<ALIAS> <on_off|mod|fan|inc|dec>'
-  echo e.g.: `basename ${0}` '"temp_ctrl_0"' '"mod"'
+  echo usage: `basename ${0}` '<ALIAS> <on_off|mode|fan|inc|dec>'
+  echo e.g.: `basename ${0}` '"temp_ctrl_0"' '"mode"'
   exit 1
 fi
 
