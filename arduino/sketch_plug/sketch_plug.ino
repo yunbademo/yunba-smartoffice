@@ -343,6 +343,6 @@ void loop() {
 
 //  Ethernet.maintain();
 
-  delay(100);
+//  delay(100);
 }
 
