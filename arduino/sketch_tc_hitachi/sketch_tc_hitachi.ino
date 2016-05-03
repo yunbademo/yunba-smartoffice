@@ -1,7 +1,7 @@
 /* serial data format:
     header:
       flag: 1 byte, 0xaa, filter out debug message
-      type: 1 bytes, 1: upstream, 2: downstream
+      type: 1 bytes, 1: upstream, 2: downstream, 3: control
       body length: 2 bytes, network byte order
     body:
       json data from yunba service
@@ -17,6 +17,7 @@
 
 #define MSG_TYPE_UP 0x01
 #define MSG_TYPE_DOWN 0x02
+#define MSG_TYPE_CONTROL 0x03
 
 #define HEADER_LEN 4
 #define BUF_LEN 256
@@ -41,6 +42,10 @@
 #define MAX_STABLE_CNT 32 /* 去除波动，MAX_STABLE_CNT 次数据不变后才上报状态 */
 
 #define SIM_BTN_DELAY 64
+
+#define ZIGBEE_INIT_TIMEOUT 5000
+#define ZIGBEE_KEEP_ALIVE_INTERVAL 5000
+#define ZIGBEE_KEEP_ALIVE_TIMEOUT 8000
 
 const char *g_devid = "temp_ctrl_1";
 
@@ -73,6 +78,16 @@ uint8_t g_stable_cnt_slave = 0;
 uint8_t g_last_unit = 5; /* 上一个个位数，默认 25 度 */
 uint8_t g_last_ten = 2; /* 上一个十位数，默认 25 度 */
 
+uint8_t g_zigbee_ok = 0;
+unsigned long g_zigbee_last_init = 0;
+unsigned long g_zigbee_last_keep_alive = 0;
+unsigned long g_zigbee_last_keep_alive_ack = 0;
+uint8_t g_zigbee_short_addr[2];
+
+uint8_t g_zigbee_cmd_clear_network[] = {0x5a, 0xaa, 0x00, 0x01, 0x02}; /* 清除网络信息 5a aa 00 01 02 */
+uint8_t g_zigbee_cmd_reset[] = {0x5a, 0xaa, 0x00, 0x01, 0x00}; /* 软件复位 5a aa 00 01 00 */
+uint8_t g_zigbee_cmd_short_addr[] = {0x5a, 0xaa, 0xbb}; /* 本地短地址 5a aa bb */
+
 void recv_header() {
   while (Serial.available() >= HEADER_LEN) {
     Serial.readBytes(g_header, 1);
@@ -88,7 +103,11 @@ void recv_header() {
 
   Serial.readBytes(g_header + 1, HEADER_LEN - 1);
 
-  if (g_header[1] != MSG_TYPE_DOWN) { // not a downstream message
+  if (g_header[1] == MSG_TYPE_UP) {
+    return;
+  } else if (g_header[1] == MSG_TYPE_CONTROL) {
+    /* 控制消息目前只有 keep_alive_ack */
+    g_zigbee_last_keep_alive_ack = millis();
     return;
   }
 
@@ -167,9 +186,9 @@ void handle_msg() {
   }
 }
 
-void send_msg() {
+void send_msg(uint8_t type) {
   g_buf[0] = FLAG_CHAR;
-  g_buf[1] = MSG_TYPE_UP; // 1: upstream
+  g_buf[1] = type; // 1: upstream
   g_buf[2] = ((uint8_t *)&g_body_len)[1];
   g_buf[3] = ((uint8_t *)&g_body_len)[0];
 
@@ -192,7 +211,7 @@ void report_status() {
 
   g_body_len = root.printTo((char *)g_buf + HEADER_LEN, BUF_LEN - HEADER_LEN);
 
-  send_msg();
+  send_msg(MSG_TYPE_UP);
 }
 
 void handle_input() {
@@ -402,6 +421,36 @@ void print_status() {
   Serial.println(g_room_temp);
 }
 
+void clear_serial() {
+  while (Serial.available()) {
+    Serial.readBytes(g_buf, 1);
+  }
+}
+void zigbee_init() {
+  Serial.write(g_zigbee_cmd_clear_network, sizeof(g_zigbee_cmd_clear_network));
+  delay(10);
+  Serial.write(g_zigbee_cmd_reset, sizeof(g_zigbee_cmd_reset));
+  delay(10);
+}
+
+void zigbee_check() {
+  clear_serial();
+  Serial.write(g_zigbee_cmd_short_addr, sizeof(g_zigbee_cmd_short_addr));
+  delay(10);
+  while (Serial.available() <= 5) { /* 5A BB 02 00 00 */
+    delay(10);
+  }
+  
+  Serial.readBytes(g_buf, 5);
+  if (g_buf[3] == 0xff && g_buf[3] == 0xfe) {
+    return;
+  }
+
+  g_zigbee_short_addr[0] = g_buf[3];
+  g_zigbee_short_addr[1] = g_buf[4];
+  g_zigbee_ok = 1;
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -427,10 +476,39 @@ void setup() {
   pinMode(PIN_ON_OFF_READ, INPUT);
 }
 
+void zigbee_keep_alive() {
+  StaticJsonBuffer<256> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+
+  root["devid"] = g_devid;
+
+  g_body_len = root.printTo((char *)g_buf + HEADER_LEN, BUF_LEN - HEADER_LEN);
+  
+  send_msg(MSG_TYPE_CONTROL);
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
-  handle_input();
+  if (!g_zigbee_ok) {
+    if (millis() - g_zigbee_last_init > ZIGBEE_INIT_TIMEOUT) {
+      zigbee_init();
+      g_zigbee_last_init = millis();
+    }
+    delay(100);
+    zigbee_check();
+    return;
+  }
 
+  if (millis() - g_zigbee_last_keep_alive > ZIGBEE_KEEP_ALIVE_INTERVAL) {
+      zigbee_keep_alive();
+      g_zigbee_last_keep_alive = millis();
+  }
+
+  if (millis() - g_zigbee_last_keep_alive_ack > ZIGBEE_KEEP_ALIVE_TIMEOUT) {
+      g_zigbee_ok = 0;
+  }
+
+  handle_input();
   handle_status();
 
   if (g_need_report) {
@@ -441,3 +519,4 @@ void loop() {
 
 //  delay(100);
 }
+
