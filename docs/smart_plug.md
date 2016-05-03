@@ -69,7 +69,7 @@
 [6]: https://item.taobao.com/item.htm?spm=a1z09.2.0.0.YEN2J3&id=45850454721&_u=m3u3sjd290e
 [7]: https://detail.tmall.com/item.htm?id=39511836174&spm=a1z09.2.0.0.BW6MaH&_u=m3u3sjd3e42
 [8]: http://item.jd.com/773860.html
-[9]: https://github.com/shdxiang/yunba-smartoffice/blob/master/arduino/sketch_plug/sketch_plug.ino
+[9]: https://github.com/yunbademo/yunba-smartoffice/blob/master/arduino/sketch_plug/sketch_plug.ino
 [10]: https://www.arduino.cc/en/Main/Software
 [11]: http://f1.yunba.io/yunba-plug-new/
 [12]: https://github.com/shdxiang/yunba-arduino-sdk

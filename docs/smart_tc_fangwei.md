@@ -79,7 +79,7 @@
 
 ![9.png](../images/9.png)
 
-[1]: https://github.com/shdxiang/yunba-smartoffice/blob/master/docs/smart_switch.md
+[1]: https://github.com/yunbademo/yunba-smartoffice/blob/master/docs/smart_switch.md
 [2]: https://www.arduino.cc/en/Main/ArduinoBoardProMini
 [3]: http://baike.baidu.com/link?url=Kcwx8ighfWCVc23x2V7q3uK0NhGk4vNAUnnUN4zYJFWbWpq68GvjoJHRJlOZsVZILpR_RJcBoes6-WNrCVW0Mq
 [4]: http://yunba.io
@@ -88,10 +88,10 @@
 [7]: https://item.taobao.com/item.htm?id=520850867141
 [8]: https://item.taobao.com/item.htm?id=521709808584
 [9]: https://item.taobao.com/item.htm?id=45811340839
-[10]: https://github.com/shdxiang/yunba-smartoffice/blob/master/arduino/sketch_tc/sketch_tc.ino
-[11]: https://github.com/shdxiang/yunba-smartoffice/tree/master/arduino/sketch_tc_slave
+[10]: https://github.com/yunbademo/yunba-smartoffice/blob/master/arduino/sketch_tc/sketch_tc.ino
+[11]: https://github.com/yunbademo/yunba-smartoffice/tree/master/arduino/sketch_tc_slave
 [12]: https://www.arduino.cc/en/Main/Software
-[13]: https://github.com/shdxiang/yunba-smartoffice/blob/master/python/serial_gateway.py
+[13]: https://github.com/yunbademo/yunba-smartoffice/blob/master/python/serial_gateway.py
 [14]: http://www.tudou.com/programs/view/gJOcbx7MX4w/
 [15]: #
 

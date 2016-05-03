@@ -54,9 +54,9 @@
 [5]: https://item.taobao.com/item.htm?id=521709260567
 [6]: https://item.taobao.com/item.htm?id=520850867141
 [7]: https://item.taobao.com/item.htm?id=521709808584
-[8]: https://github.com/shdxiang/yunba-smartoffice/blob/master/arduino/sketch_switch/sketch_switch.ino
+[8]: https://github.com/yunbademo/yunba-smartoffice/blob/master/arduino/sketch_switch/sketch_switch.ino
 [9]: https://www.arduino.cc/en/Main/Software
-[10]: https://github.com/shdxiang/yunba-smartoffice/blob/master/python/serial_gateway.py
+[10]: https://github.com/yunbademo/yunba-smartoffice/blob/master/python/serial_gateway.py
 [11]: http://www.tudou.com/programs/view/gJOcbx7MX4w/
 [12]: #
 [13]: https://item.taobao.com/item.htm?id=45811340839
