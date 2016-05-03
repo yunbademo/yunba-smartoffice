@@ -58,7 +58,7 @@ class Transfer():
         self.srl.flushOutput()
 
         self.step = 1
-        self.body_len = 0;
+        self.body_len = 0
         self.recv_len = -1
         self.body_data = ''
         self.proxys = {}
@@ -83,7 +83,7 @@ class Transfer():
         x, = struct.unpack('>B', ch)
         if x != MSG_TYPE_UP: # not a upstream message
             self.__logger.debug('not a upstream message')
-            return;
+            return
     
         data = self.srl.read(2)
         self.body_len, = struct.unpack('>H', data)
@@ -99,7 +99,7 @@ class Transfer():
     
         data = self.srl.read(self.body_len - self.recv_len)
         self.body_data += data
-        self.recv_len += len(data);
+        self.recv_len += len(data)
     
         if self.recv_len != self.body_len:
             return
@@ -110,14 +110,14 @@ class Transfer():
         try:
             jso = json.loads(self.body_data)
         except Exception as e:
-            self.step = 1;
+            self.step = 1
             return
 
         alias = jso['devid']
         if self.proxys.has_key(alias):
             self.proxys[alias].publish(self.body_data)
       
-        self.step = 1;
+        self.step = 1
 
     def write(self, msg):
         msg = msg.encode('utf-8')

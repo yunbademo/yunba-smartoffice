@@ -47,11 +47,11 @@
 #define ZIGBEE_KEEP_ALIVE_INTERVAL 5000
 #define ZIGBEE_KEEP_ALIVE_TIMEOUT 8000
 
-const char *g_devid = "temp_ctrl_1";
+const char *g_devid = "tc_office_1";
 
 uint8_t g_header[HEADER_LEN];
 uint8_t g_buf[BUF_LEN];
-int g_step = 1; // 1: recv header, 2 recv body
+int g_step = 1; // 1: recv header, 2: recv body
 uint16_t g_body_len = 0;
 uint16_t g_recv_len = 0;
 
@@ -479,8 +479,12 @@ void setup() {
 void zigbee_keep_alive() {
   StaticJsonBuffer<256> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
+  char addr[8] = {0};
 
   root["devid"] = g_devid;
+
+  snprintf(addr, sizeof(addr), "%02x%02x", g_zigbee_short_addr[0], g_zigbee_short_addr[1]);
+  root["addr"] = addr;
 
   g_body_len = root.printTo((char *)g_buf + HEADER_LEN, BUF_LEN - HEADER_LEN);
   
