@@ -127,6 +127,8 @@ class Transfer():
 
         if self.msg_type == MSG_TYPE_CONTROL:
             if self.proxys.has_key(alias):
+                p = self.proxys[alias]
+                p.zigbee_addr = jso['addr']
                 self.write(alias, MSG_TYPE_CONTROL, alias)
             else:
                 p = Proxy(APPKEY, alias, alias, self.topic, self, jso['addr'])
@@ -153,7 +155,7 @@ class Transfer():
         data = struct.pack('>BBBBBB', 0x5a, 0xaa, 0x07, 0x02, (int_addr >> 8) & 0xff >> 1, int_addr & 0xff)
 
         self.srl.write(data)
-        time.sleep(0.016) # wait for setting finished
+        time.sleep(0.5) # wait for setting finished
 
     def write(self, alias, msg_type, msg):
         self.set_target_addr(alias)
