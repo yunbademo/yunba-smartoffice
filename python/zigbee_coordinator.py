@@ -149,13 +149,13 @@ class Transfer():
 
         int_addr = int(addr, 16)
 
-        # print (int_addr >> 8) & 0xff >> 1, int_addr & 0xff
+        self.__logger.debug('set target addr: 0x%02x%02x', (int_addr >> 8) & 0xff, int_addr & 0xff)
 
         # 5a aa 07 02 xx xx
-        data = struct.pack('>BBBBBB', 0x5a, 0xaa, 0x07, 0x02, (int_addr >> 8) & 0xff >> 1, int_addr & 0xff)
+        data = struct.pack('>BBBBBB', 0x5a, 0xaa, 0x07, 0x02, (int_addr >> 8) & 0xff, int_addr & 0xff)
 
         self.srl.write(data)
-        time.sleep(0.5) # wait for setting finished
+        time.sleep(0.016) # wait for setting finished
 
     def write(self, alias, msg_type, msg):
         self.set_target_addr(alias)
