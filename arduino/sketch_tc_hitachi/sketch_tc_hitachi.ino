@@ -497,6 +497,8 @@ void zigbee_keep_alive() {
   snprintf(addr, sizeof(addr), "%02x%02x", g_zigbee_short_addr[0], g_zigbee_short_addr[1]);
   root["addr"] = addr;
 
+  root["status"] = g_net_ok;
+
   g_body_len = root.printTo((char *)g_buf + HEADER_LEN, BUF_LEN - HEADER_LEN);
   
   send_msg(MSG_TYPE_CONTROL);
