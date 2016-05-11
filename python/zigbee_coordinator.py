@@ -13,7 +13,7 @@ logger = logging.getLogger('zigbee_coordinator')
 logging.basicConfig(level=logging.DEBUG)
 
 APPKEY = '5697113d4407a3cd028abead'
-#TOPIC = 'smart_office'
+# TOPIC = 'smart_office'
 HEADER_LEN = 4
 FLAG_CHAR = 0xcc
 MSG_TYPE_UP = 0x01
@@ -155,7 +155,7 @@ class Transfer():
         data = struct.pack('>BBBBBB', 0x5a, 0xaa, 0x07, 0x02, (int_addr >> 8) & 0xff, int_addr & 0xff)
 
         self.srl.write(data)
-        time.sleep(0.016) # wait for setting finished
+        time.sleep(0.010) # wait for setting finished
 
     def write(self, alias, msg_type, msg):
         self.set_target_addr(alias)

@@ -3,7 +3,7 @@
 简介
 --------
 
-与 [智能开关][1] 类似，我们使用 [Arduino Pro Mini][2] 和一个基于 [Zigbee][3] 的串口模块，集成到一个普通空调面板内部，制作成一个智能空调面板；将另一个基于 Zigbee 的串口模块作为网关，与智能开关通讯，并通过 [云巴实时消息服务][4] 接入互联网；从而达到可以使用 Web 或 App 实时控制空调的目的；与 [智能开关][1] 不同的是：我们使用了两个 [Arduino Pro Mini][2]，其中一个用于辅助读面板的状态，因为一个  [Arduino Pro Mini][2] 的引脚不够用（参考后面的硬件连接）。
+我们使用 [Arduino Pro Mini][2] 和一个基于 [Zigbee][3] 的串口模块，集成到一个普通空调面板内部，制作成一个智能空调面板；将另一个基于 Zigbee 的串口模块作为网关，与智能开关通讯，并通过 [云巴实时消息服务][4] 接入互联网；从而达到可以使用 Web 或 App 实时控制空调的目的；与 [智能开关][1] 不同的是：我们使用了两个 [Arduino Pro Mini][2]，其中一个用于辅助读面板的状态，因为一个  [Arduino Pro Mini][2] 的引脚不够用（参考后面的硬件连接）。
 
 下图为制作完成的智能空调面板：
 
@@ -75,11 +75,11 @@
 
 安装之前需要先配置 Zigbee 模块，我们配置成：波特率 115200，广播模式。使两个模块能正常通讯，参考模块厂家的 [配置视频][14]。
 
-配置好后，将各元件连接，并安装好。将空调面板连接空调正常工作；并将另一个 Zigbee 模块通过 USB 转串线接在安装了 Python 的 PC 机上，并运行串口网关代码。正常情况下就可以通过 [Web][15] 端查看其状态并设置空调。需要注意的是要保证开关代码和串口网关代码中的 `Appkey`，`Devid`，`Topic` 等参数与 [Web][15] 中的一致，效果如下图：
+配置好后，将各元件连接，并安装好。将空调面板连接空调正常工作；并将另一个 Zigbee 模块通过 USB 转串线接在安装了 Python 的 PC 机上，并运行串口网关代码。正常情况下就可以通过 Web 页面查看其状态并设置空调。需要注意的是要保证开关代码和串口网关代码中的 `Appkey`，`Devid`，`Topic` 等参数与 Web 中的一致，效果如下图：
 
-![9.png](../images/9.png)
+![9.jpg](../images/9.jpg)
 
-[1]: https://github.com/yunbademo/yunba-smartoffice/blob/master/docs/smart_switch.md
+[1]: #
 [2]: https://www.arduino.cc/en/Main/ArduinoBoardProMini
 [3]: http://baike.baidu.com/link?url=Kcwx8ighfWCVc23x2V7q3uK0NhGk4vNAUnnUN4zYJFWbWpq68GvjoJHRJlOZsVZILpR_RJcBoes6-WNrCVW0Mq
 [4]: http://yunba.io
@@ -93,5 +93,5 @@
 [12]: https://www.arduino.cc/en/Main/Software
 [13]: https://github.com/yunbademo/yunba-smartoffice/blob/master/python/serial_gateway.py
 [14]: http://www.tudou.com/programs/view/gJOcbx7MX4w/
-[15]: #
+
 
