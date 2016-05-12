@@ -22,7 +22,7 @@
 3. Zigbee 模块 2 个带天线（如果你有多个面板的话，请按需购买），一个集成在面板内部，另一个作为协调器接入互联网，[购买链接][7]。
 4. Arduino Pro Mini 专用 miniUSB 接口，用于烧写程序，[购买链接][8]。
 5. USB 转串口线，用于连接 Zigbee 模块和 PC 机作为协调器，[购买链接][9]。
-6. 5V 转 3.3V 电平转换模块 1 个，因为面板供电为 5V，而 Zigbee 模块需要 3.3V，，[购买链接][15]。
+6. 5V 转 3.3V 电平转换模块 1 个，因为面板供电为 5V，而 Zigbee 模块需要 3.3V，[购买链接][15]。
 7. 导线若干，见内部图。
 
 代码
@@ -47,19 +47,19 @@
 | GND | GND | GND |
 | TXD || RX |
 | RXD || TX |
-| A0 | LCD35 ||
-| A1 | LCD34 ||
-| A2 | LCD33 ||
-| A3 | LCD32 ||
-| A4 | LCD29 ||
-| A5 | LCD28 ||
-| A6 | LCD8 ||
-| A7 | LCD7 ||
-| 3 | RUN/STOP ||
-| 4 | MODE ||
-| 5 | FAN SPEED ||
-| 6 | TEMP SW11 ||
-| 7 | TEMP SW12 ||
+| A0 | LCD pin 35 ||
+| A1 | LCD pin 34 ||
+| A2 | LCD pin 33 ||
+| A3 | LCD pin 32 ||
+| A4 | LCD pin 29 ||
+| A5 | LCD pin 28 ||
+| A6 | LCD pin 8 ||
+| A7 | LCD pin 7 ||
+| 3 | RUN/STOP(SW13) ||
+| 4 | MODE(SW10) ||
+| 5 | FAN SPEED(SW5) ||
+| 6 | TEMP(SW11) ||
+| 7 | TEMP(SW12) ||
 | 8 | LED1(Right pin of R21) ||
 
 安装及测试
