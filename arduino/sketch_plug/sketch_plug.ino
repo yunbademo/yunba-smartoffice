@@ -173,7 +173,7 @@ bool setup_with_appkey_and_devid() {
 }
 
 void check_connect() {
-  if (millis() - g_last_check_ms > 2000) {
+  if (millis() - g_last_check_ms > 10000) {
     bool st = g_mqtt_client->connected();
     //Serial.print("cs:");
     //Serial.println(st);
