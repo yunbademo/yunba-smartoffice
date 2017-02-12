@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yunba Plug Base</title>
+    <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <style type="text/css">
+    .center {
+        text-align: center;
+    }
+    
+    .container-fluid {
+        padding: 0px;
+    }
+    
+    .container {
+        padding: 0px;
+    }
+    
+    .my-col {
+        padding: 0px;
+    }
+    
+    .my-btn-block {
+        margin-top: 3px;
+        width: 100%;
+    }
+    
+    .row {
+        margin: 0px;
+    }
+    
+    .glyphicon-spin {
+        -webkit-animation: spin 1500ms infinite linear;
+        animation: spin 1500ms infinite linear;
+    }
+    
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(359deg);
+            transform: rotate(359deg);
+        }
+    }
+    
+    @keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+            transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(359deg);
+            transform: rotate(359deg);
+        }
+    }
+    /*   .plug-base-icon {
+        background: #F79431;
+        overflow: hidden;
+    }*/
+    
+    .plug-base-icon-path {
+        animation: blink 3s ease infinite;
+    }
+    
+    @keyframes blink {
+        0% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.2;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    </style>
+    <script src="//cdn.bootcss.com/socket.io/1.4.5/socket.io.js"></script>
+    <script src="https://rawgit.com/yunba/yunba-javascript-sdk/master/yunba-js-sdk.js"></script>
+    <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-2 col-md-1 col-xs-0 my-col"></div>
+            <div class="col-lg-8 col-md-10 col-xs-0 my-col">
+                <div class="panel panel-success center">
+                    <div class="panel-body">
+                        <svg version="1.1" id="stecker" class="stecker" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="150px" height="150px" viewBox="0 0 150 150" enable-background="new 0 0 150 150" xml:space="preserve">
+                            <g transform="translate(0,150) scale(0.1,-0.1)">
+                                <path class="plug-base-icon-path" fill="rgb(50,200,50)" stroke="#000" stroke-width="5" stroke-miterlimit="10" stroke-linecap="round" d="M900.762,1361.001c80.996-23.003,110.996-37.002,177.988-78.999c353.008-220,408.008-720,113.008-1012.002
+		c-74.004-72.998-140.098-126.855-241.094-164.854c-60-22.998-75.654-37.031-200.664-37.031
+		C657.002,67.119,581.758,90,555.757,99.004c-58.999,18.994-175,72.998-175,80c0,3.994,32.998,38.994,72.998,78.994L526.758,330
+		l33.999-35.996c65-67.002,145-94.004,221.001-74.004c36.992,10,68.008,35,201.992,169.004
+		c86.016,85.996,157.012,161.992,157.012,168.994s-18.008,32.002-40,56.006c-22.012,23.994-40,45.996-40,48.994
+		s12.988,17.998,27.988,34.004c38.008,37.002,52.012,65,52.012,101.997c0,47.002-17.012,78.999-52.012,101.001
+		c-57.988,35-103.984,25-168.984-36.001l-35-33.999l-27.012,27.998l-26.992,28.003l30.996,30
+		c58.008,55,73.008,107.998,44.004,163.999c-22.012,42.002-53.008,60-105.996,60c-40.005,0-53.013-6.001-93.008-41.001
+		l-47.002-41.997l-32.998,31.997c-17.002,17.002-42.002,31.001-53.003,31.001c-22.998,0-290.996-260-325-315
+		c-21.997-37.002-23.999-120.996-2.998-172.998c8.999-20,33.999-56.006,56.001-77.998l41.001-42.002l-76.001-75l-76.001-76.006
+		l-22.998,37.002C64.756,565.996,49.756,811.001,131.758,995c61.001,137.002,196.001,275,325,330
+		C591.758,1382.998,773.75,1397.998,900.762,1361.001z"></path>
+                            </g>
+                        </svg>
+                        <button type="button" class="btn btn-success disabled my-btn-block">
+                            <span id="span-loading" class="glyphicon glyphicon-refresh glyphicon-spin" aria-hidden="true"></span>
+                            <span id="span-status">正在加载所需文件...</span>
+                        </button>
+                        <button id="btn-on" type="button" class="btn btn-danger my-btn-block" style="display: none">
+                            <span class="glyphicon glyphicon-send" aria-hidden="true"></span> 打开
+                        </button>
+                        <button id="btn-off" type="button" class="btn btn-danger my-btn-block" style="display: none">
+                            <span class="glyphicon glyphicon-send" aria-hidden="true"></span> 关闭
+                        </button>
+                        <p></p>
+                        <a href="http://yunba.io/">云巴</a> -
+                        <a href="https://github.com/yunbademo">
+							GitHub
+						</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-1 col-xs-0 my-col"></div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>
