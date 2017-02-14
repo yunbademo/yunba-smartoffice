@@ -1,4 +1,4 @@
-var APPKEY = '5697113d4407a3cd028abead';
+var APPKEY = '563c4afef085fc471efdf803';
 var TOPIC_REPORT = 'yunba_smart_plug';
 var ALIAS = 'plc_0';
 
@@ -11,11 +11,7 @@ $(window).bind("beforeunload", function() {
 })
 
 $(document).ready(function() {
-    window.send_time = null;
-    window.first_msg = true;
-
     $('#span-status').text('正在连接云巴服务器...');
-    center = { lat: 22.542955, lng: 114.059688 };
 
     window.yunba = new Yunba({
         server: 'sock.yunba.io',
@@ -99,15 +95,15 @@ function send_message(message) {
 function yunba_sub_ok() {
     $('#span-status').text('正在获取插座状态...');
     var msg = JSON.stringify({ cmd: "plug_get", devid: ALIAS });
-    send_message(msg)
+    send_message(msg);
 }
 
 $('#btn-on').click(function() {
     var msg = JSON.stringify({ cmd: "plug_set", devid: ALIAS, status: 1 });
-    send_message(msg)
+    send_message(msg);
 });
 
 $('#btn-off').click(function() {
     var msg = JSON.stringify({ cmd: "plug_set", devid: ALIAS, status: 0 });
-    send_message(msg)
+    send_message(msg);
 });
